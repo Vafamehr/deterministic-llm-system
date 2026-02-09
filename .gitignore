@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env/
+
+# Ollama
+.ollama/
+
+# OS junk
+.DS_Store
+Thumbs.db
+llm_env/
