@@ -14,6 +14,16 @@ def embed(text: str) -> np.ndarray:
     r.raise_for_status()
     return np.array(r.json()["embedding"], dtype=np.float32)
 
+def ask_llm(prompt: str) -> str:
+    r = requests.post(
+        f"{OLLAMA}/api/generate",
+        json={"model": "llama3", "prompt": prompt, "stream": False},
+        timeout=120,
+    )
+    r.raise_for_status()
+    return r.json()["response"].strip()
+
+
 if __name__ == "__main__":
 
     DOCS = [
@@ -48,3 +58,21 @@ if __name__ == "__main__":
     print("Top hits:")
     for rank, (i, s) in enumerate(zip(ids[0], scores[0]), start=1):
         print(f"{rank}. score={s:.4f} | {DOCS[i]}")
+
+    context = "\n".join([DOCS[i] for i in ids[0]])
+
+    prompt = f"""Use the context to answer the question.
+
+    Context:
+    {context}
+
+    Question:
+    {query}
+
+    Answer in 3-5 sentences:
+    """
+
+    answer = ask_llm(prompt)
+    print("\n--- RAG Answer ---")
+    print(answer)
+    
