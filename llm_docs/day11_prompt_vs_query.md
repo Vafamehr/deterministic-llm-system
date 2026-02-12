@@ -180,3 +180,5 @@ Reformulation restructures wording.
 
 ## Key Insight
 Reformulation stabilizes embeddings and improves alignment.
+
+Clarify → Expand → Filter → Reformulate
