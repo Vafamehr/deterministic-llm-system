@@ -26,3 +26,7 @@ print(process_amount(10.456))
 items = ["deadlines", "payment", "termination"]
 summary = ", ".join(items)
 print(summary)
+
+
+print(all([True, True, False]))
+print(any([False, True, True]))
