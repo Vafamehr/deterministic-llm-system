@@ -112,3 +112,6 @@ Only add a line when:
 ✔ I can explain it without notes
 
 If it grows too long → compress it.
+
+## Day 13
+Memory turns an LLM from stateless replies into a contextual system by tracking task state (short-term) and user profile (long-term). Store structured state, not chat history, and inject only relevant context into prompts
