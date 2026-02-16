@@ -73,3 +73,7 @@ With these checks, you can tell:
 - changes to chunking/top-k/filters improved coverage or not
 
 ---
+
+## Step 4 — Completeness Signal
+Check whether all expected facts were covered, not just one.
+Completeness detects partial answers even when retrieval succeeded.
