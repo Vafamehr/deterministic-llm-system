@@ -5,10 +5,10 @@ RAG systems often *sound* correct even when they are wrong.
 Without evaluation, you can't tell whether improvements help or just “feel better.”
 
 RAG must be evaluated across stages:
-- retrieval behavior
-- answer grounding
-- task alignment
-- coverage
+- retrieval behavior: does it fetch the right book?
+- answer grounding: read it
+- task alignment: answer my question?
+- coverage: check the whole thing?
 
 This is closer to *search testing* than classic ML benchmarking.
 
