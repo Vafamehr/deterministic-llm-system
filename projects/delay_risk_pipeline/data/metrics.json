@@ -1,0 +1,9 @@
+{
+  "region": "West",
+  "time_window": "last_7_days",
+  "port": "Oakland",
+  "avg_delay_hours": 6.2,
+  "days_above_threshold": 4,
+  "wow_change_pct": 38,
+  "primary_cause_code": "PORT_CONGESTION"
+}

@@ -108,3 +108,132 @@ Tool	Use Case
 dict	Quick, loose data
 dataclass	Structured lightweight data
 class	Full behavior + logic
+
+
+
+# Python Fluency — `subprocess` (Running External Programs)
+
+## What is `subprocess`?
+
+`subprocess` lets Python run commands in the operating system shell, just like typing them in the terminal.
+
+It is used when Python needs to:
+
+* call a CLI tool (e.g., `ollama`, `git`, `ffmpeg`)
+* automate workflows involving external programs
+* capture output from another process
+
+Think of it as:
+
+> Python → asks OS → run this command → give me the result back.
+
+---
+
+## Why We Used It in the LLM Pipeline
+
+We needed Python to run:
+
+```
+ollama run llama3
+```
+
+because Ollama is the program that actually hosts and executes the model.
+
+Python itself does NOT run the LLM — it orchestrates the call.
+
+So `subprocess` acts as the bridge:
+
+```
+Python pipeline → subprocess → Ollama CLI → model runs → output returned
+```
+
+---
+
+## Basic Pattern
+
+```python
+import subprocess
+
+result = subprocess.run(
+    ["command", "arg1", "arg2"],
+    input="optional stdin",
+    text=True,
+    capture_output=True
+)
+
+print(result.stdout)
+```
+
+---
+
+## Important Arguments Explained
+
+### `["command", "arg1", "arg2"]`
+
+This is the command you would normally type in the terminal.
+
+Example:
+
+```python
+["ollama", "run", "llama3"]
+```
+
+---
+
+### `input=prompt`
+
+Sends text into the program’s stdin (like typing into it).
+
+We used this to send the LLM prompt.
+
+---
+
+### `text=True`
+
+Tells Python to treat input/output as strings instead of bytes.
+
+Almost always want this for LLM workflows.
+
+---
+
+### `capture_output=True`
+
+Captures what the program prints so we can use it inside Python.
+
+Without this, output would just go to the terminal.
+
+---
+
+## What `result` Contains
+
+```python
+result.stdout   # what the program printed (LLM response)
+result.stderr   # errors if any
+result.returncode  # 0 = success
+```
+
+---
+
+## Mental Model
+
+`subprocess` is NOT about AI.
+
+It is about **process orchestration**.
+
+Use it anytime:
+
+* Python must control another executable
+* You need automation around CLI tools
+* You want reproducible pipelines
+
+---
+
+## Example (Non-AI)
+
+```python
+subprocess.run(["git", "status"])
+```
+
+Python just ran a git command.
+
+Same mechanism we used for Ollama.
