@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 import subprocess
+# from Day 20
+from delay_risk.validation.validate import validate_inputs
 
 # “Bring me the relevant facts and documents.” siple alternatice for RAG
 

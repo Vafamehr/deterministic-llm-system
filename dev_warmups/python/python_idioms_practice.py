@@ -30,3 +30,8 @@ print(summary)
 
 print(all([True, True, False]))
 print(any([False, True, True]))
+
+
+
+
+
