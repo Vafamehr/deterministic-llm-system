@@ -1,18 +1,12 @@
 {
-  "timestamp": "2026-02-18T17:45:52.834574",
-  "mode": "train",
-  "ok": false,
-  "errors": [
-    "Duplicate (id_col, time_col) keys found.",
-    "Examples:\nproject_id  snapshot_week\n         A              1",
-    "risk_score outside [0.0,1.0] for 2 rows."
-  ],
-  "warnings": [
-    "Columns with >50% missing values: weather_risk_score"
-  ],
+  "timestamp": "2026-02-18T13:00:49.806077",
+  "mode": "score",
+  "ok": true,
+  "errors": [],
+  "warnings": [],
   "stats": {
-    "n_rows": 4,
-    "n_cols": 5,
-    "n_projects": 3
+    "n_rows": 5,
+    "n_cols": 3,
+    "n_projects": 2
   }
 }
