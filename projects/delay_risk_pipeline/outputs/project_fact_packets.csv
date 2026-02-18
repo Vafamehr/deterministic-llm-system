@@ -1,0 +1,11 @@
+project_id,weeks_observed,avg_staffing,staffing_volatility,progress,fact_packet
+A,3,10.0,0.5690355937288492,1.0,"Project: A
+Progress: 1.00
+Weeks observed: 3
+Avg staffing: 10.00
+Staffing volatility (3w std avg): 0.57"
+B,2,6.0,0.7071067811865476,1.0,"Project: B
+Progress: 1.00
+Weeks observed: 2
+Avg staffing: 6.00
+Staffing volatility (3w std avg): 0.71"

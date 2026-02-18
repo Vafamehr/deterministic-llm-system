@@ -153,6 +153,8 @@ import pandas as pd
 
 from delay_risk.validation.validate import validate_inputs, ValidationRules, write_validation_report
 from delay_risk.features.build_features import build_features
+from delay_risk.representation.summarize import summarize_projects
+from delay_risk.representation.fact_packets import build_fact_packets
 
 
 # ------------------------------------------------------------------
@@ -202,6 +204,27 @@ def main() -> None:
 
     print(f"Feature table written to {output_file}")
     print("Pipeline complete.")
+
+    print("Summarizing projects (representation layer)...")
+    summary_df = summarize_projects(feat_df)
+
+    summary_file = OUTPUT_DIR / "project_summary.csv"
+    summary_df.to_csv(summary_file, index=False)
+
+    print(f"Project summary written to {summary_file}")
+    
+    print("Building fact packets...")
+    packet_df = build_fact_packets(summary_df)
+
+    packet_file = OUTPUT_DIR / "project_fact_packets.csv"
+    packet_df.to_csv(packet_file, index=False)
+
+    print(f"Project fact packets written to {packet_file}")
+
+
+
+
+
 
 
 if __name__ == "__main__":
