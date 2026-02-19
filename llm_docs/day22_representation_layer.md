@@ -100,3 +100,35 @@ outputs/project_fact_packets.csv
 LLMs reason best over structured, compact facts.
 We compute facts deterministically rather than forcing the model to infer trends
 from raw tables.
+
+
+# Day 22 — Chunk 4 — Fact Packet Reader
+
+## Goal
+Consume project_fact_packets.csv through a clean interface.
+
+## Added
+- load_fact_packets(path)
+- get_fact_packets_for_projects(df, project_ids)
+
+## Guarantees
+- Enforces required schema
+- Fails early if columns missing
+- Returns clean fact_packet text blocks
+
+## Why
+Separates data pipeline from LLM reasoning layer.
+Acts as contract boundary.
+
+
+# Day 22 — Chunk 5 — Deterministic Decision Stub
+
+Goal:
+Consume fact_packets and output structured risk assessments.
+
+Added:
+- assess_risk_from_packets()
+
+Why:
+Creates reasoning layer before introducing LLM.
+Prevents model from doing deterministic work.
