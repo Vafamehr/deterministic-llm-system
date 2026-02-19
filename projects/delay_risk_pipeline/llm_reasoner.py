@@ -1,27 +1,60 @@
 import json
 import subprocess
-from typing import List, Dict
+from typing import List, Dict,Any
+
 
 
 MODEL_NAME = "llama3"  # adjust if needed
 
 
+# def build_prompt(fact_packets: List[str]) -> str:
+#     joined_packets = "\n\n".join(fact_packets)
+
+#     return f"""
+# You are a supply chain risk analyst.
+
+# Below are structured project summaries.
+
+# {joined_packets}
+
+# Return a JSON object with:
+# - overall_risk (LOW / MEDIUM / HIGH)
+# - reasoning (short explanation)
+
+# Respond with valid JSON only.
+# """
+
+
+
+
 def build_prompt(fact_packets: List[str]) -> str:
-    joined_packets = "\n\n".join(fact_packets)
+    joined = "\n\n".join(fact_packets)
 
     return f"""
 You are a supply chain risk analyst.
 
-Below are structured project summaries.
+You will receive project fact packets.
+Return ONLY valid JSON. No backticks. No extra text.
 
-{joined_packets}
+JSON schema:
+{{
+  "overall_risk": "LOW|MEDIUM|HIGH",
+  "projects": [
+    {{"project_id": "string", "risk": "LOW|MEDIUM|HIGH", "reason": "string"}}
+  ],
+  "next_actions": ["string"]
+}}
 
-Return a JSON object with:
-- overall_risk (LOW / MEDIUM / HIGH)
-- reasoning (short explanation)
+Rules:
+- Include one entry in "projects" per project present in the fact packets.
+- project_id must match exactly what appears after "Project:".
+- Keep reasons short (1 sentence max).
 
-Respond with valid JSON only.
-"""
+Fact packets:
+{joined}
+""".strip()
+
+
 
 
 def call_llm(prompt: str) -> str:
@@ -88,18 +121,53 @@ def parse_llm_output(text: str) -> Dict:
     raise ValueError("JSON braces did not close. Model output was truncated or malformed.")
 
 
-REQUIRED_KEYS = {"overall_risk", "reasoning"}
+# REQUIRED_KEYS = {"overall_risk", "reasoning"}
 
 
-def validate_decision_schema(result: Dict) -> Dict:
-    missing = REQUIRED_KEYS - set(result.keys())
+# def validate_decision_schema(result: Dict) -> Dict:
+#     missing = REQUIRED_KEYS - set(result.keys())
+#     if missing:
+#         raise ValueError(f"Missing required keys: {missing}")
+
+#     if result["overall_risk"] not in {"LOW", "MEDIUM", "HIGH"}:
+#         raise ValueError("Invalid overall_risk value.")
+
+#     if not isinstance(result["reasoning"], str):
+#         raise ValueError("Reasoning must be a string.")
+
+#     return result
+
+
+
+def validate_decision_schema(result: Dict[str, Any]) -> Dict[str, Any]:
+    required_top = {"overall_risk", "projects", "next_actions"}
+    missing = required_top - set(result.keys())
     if missing:
         raise ValueError(f"Missing required keys: {missing}")
 
     if result["overall_risk"] not in {"LOW", "MEDIUM", "HIGH"}:
         raise ValueError("Invalid overall_risk value.")
 
-    if not isinstance(result["reasoning"], str):
-        raise ValueError("Reasoning must be a string.")
+    projects = result["projects"]
+    if not isinstance(projects, list) or len(projects) == 0:
+        raise ValueError("projects must be a non-empty list.")
+
+    for p in projects:
+        if not isinstance(p, dict):
+            raise ValueError("Each project entry must be an object.")
+        for k in ("project_id", "risk", "reason"):
+            if k not in p:
+                raise ValueError(f"Project entry missing key: {k}")
+        if p["risk"] not in {"LOW", "MEDIUM", "HIGH"}:
+            raise ValueError("Invalid project risk value.")
+        if not isinstance(p["reason"], str):
+            raise ValueError("Project reason must be a string.")
+
+    actions = result["next_actions"]
+    if not isinstance(actions, list):
+        raise ValueError("next_actions must be a list.")
+    for a in actions:
+        if not isinstance(a, str):
+            raise ValueError("Each next_action must be a string.")
 
     return result

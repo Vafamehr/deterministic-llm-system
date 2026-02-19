@@ -4,6 +4,10 @@ from orchestrator import run_full_assessment
 df = load_fact_packets("outputs/project_fact_packets.csv")
 packets = get_fact_packets_for_projects(df, ["A", "B"])
 
+llm_result,deterministic_result = run_full_assessment(packets)
+
+
+
 result = run_full_assessment(packets)
 
 print(result)
