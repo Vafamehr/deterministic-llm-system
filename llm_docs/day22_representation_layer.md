@@ -132,3 +132,20 @@ Added:
 Why:
 Creates reasoning layer before introducing LLM.
 Prevents model from doing deterministic work.
+
+
+# Key lesson we separated:
+
+Computation (deterministic, numeric)
+
+Context formatting (fact packets)
+
+Retrieval boundary (reader)
+
+Decision logic (stub engine)
+
+This separation is what lets us safely introduce an LLM next without chaos.
+
+Most people skip this and go straight to:
+
+“Here is my CSV. LLM, figure it out.”
