@@ -1,197 +1,109 @@
-🔍 Check Status (Always First)
+# Git — What I Actually Use
+
+## Check
 git status
 
-📦 Stage Changes
+## Stage
+git add <file>
+git add -A   # only if sure
 
-Safe default:
+## Commit
+git commit -m "feat: what changed"
 
-git add -A
-
-
-Simple:
-
-git add .
-
-
-One file:
-
-git add file.py
-
-💾 Save Work
-git commit -m "Short clear message"
-
-
-Example:
-
-git commit -m "Day 6: prompt notes"
-
-🔁 Daily Habit
+## End of Session
 git status
 git add -A
-git commit -m "What I did"
+git commit -m "checkpoint"
 
-📁 Move Files Safely
-git mv old.py new_folder/
+## Rename / Move
+git mv old.py new.py
 
-📜 View History
+## See History
 git log --oneline
 
 
+# Git Branching — Practical Use
 
+## What Is a Branch?
 
+A branch is a separate line of work.
 
-
-Here it is all together, ready to paste as-is into git_basics.md:
-
-# Git Basics — Daily Workflow
-
-This is a practical routine, not a full Git guide.
-Use this to build muscle memory.
+It lets you experiment without touching the base branch (`master`).
 
 ---
 
-## 0️⃣ Start a New Project (One-Time Setup)
+## Create a Branch
 
-Create project folder and enter it:
+git checkout -b feature/name
 
-
-
-mkdir my_project
-cd my_project
-
-
-Initialize Git:
-
-
-
-git init
-
-
-Create `.gitignore` early (very important):
-
-
-
-ni .gitignore
-
-
-Example contents to add:
-
-
-
-llm_env/
-pycache/
-*.pyc
-outputs/
-.env
-.vscode/
-
-
-First commit:
-
-
-
-git add -A
-git commit -m "Initial project structure"
-
+Creates the branch and switches to it.
 
 ---
 
-## 1️⃣ Always Check Status First
+## Work Normally
 
-
-
-git status
-
-
-Shows what changed. Never skip this.
-
----
-
-## 2️⃣ Stage Changes
-
-Safe default (stage everything):
-
-
-
-git add -A
-
-
-Alternative (current folder only):
-
-
-
-git add .
-
-
-Single file:
-
-
+Edit → add → commit as usual:
 
 git add file.py
+git commit -m "feat: describe change"
 
-
----
-
-## 3️⃣ Commit (Save Snapshot)
-
-
-
-git commit -m "Short clear message"
-
-
-Examples:
-
-
-
-git commit -m "Day21 pipeline wiring"
-git commit -m "Add validation layer"
-git commit -m "Fix feature bug"
-
-
-Message = what changed.
+These commits belong only to this branch.
 
 ---
 
-## 4️⃣ Daily Habit (End of Work Session)
+## See Where You Are
 
+git branch
 
-
-git status
-git add -A
-git commit -m "What I did"
-
-
-That’s the real workflow.
+`*` shows the current branch.
 
 ---
 
-## 5️⃣ Move / Rename Files Safely
+## Switch Branches
 
-Preserve history:
+git checkout master
+git checkout feature/name
 
-
-
-git mv old.py new_folder/
-
-
-Avoid manual moves when tracked.
+Git will block switching if changes are not committed.
 
 ---
 
-## 6️⃣ View History
+## If Git Blocks Checkout
 
+Commit your work:
 
+git add file.py
+git commit -m "save work before switching"
 
-git log --oneline
+Or temporarily hide changes:
 
+git stash
 
-Shows commit timeline.
+---
+
+## Delete Branch (If Experiment Not Needed)
+
+git checkout master
+git branch -d feature/name
+
+-d → delete only if merged (safe mode)
+
+-D → force delete (I know what I’m doing)
 
 ---
 
 ## Mental Model
 
-Git is not backup.
-Git is a timeline of decisions.
+Branch = isolated timeline of commits.
 
-Each commit = a checkpoint you can return to.
+Use branches whenever trying:
+- new features
+- refactors
+- risky ideas
+
+Keep base branch stable.
+
+
+
+
+
