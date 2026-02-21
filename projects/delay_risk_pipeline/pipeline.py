@@ -156,6 +156,11 @@ from delay_risk.features.build_features import build_features
 from delay_risk.representation.summarize import summarize_projects
 from delay_risk.representation.fact_packets import build_fact_packets
 
+from router.router import route
+user_input = "why delay?" # for intance then because of router goes to ANalytic strategy. Comes from day 25
+strategy = route(user_input)
+print(f"Selected strategy: {strategy}")
+
 
 # ------------------------------------------------------------------
 # CONFIG (later this moves to configs/, for now keep simple)
