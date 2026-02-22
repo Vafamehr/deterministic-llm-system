@@ -9,6 +9,13 @@ from decision_engine import assess_risk_from_packets
 from llm_reasoner import build_prompt, call_llm_with_retry
 from execution_plan import ExecutionPlan
 import time
+from stage_result import StageResult
+from stage_status import StageStatus
+
+
+
+
+
 
 
 def run_pipeline(fact_packets: List[str]) -> Dict:
@@ -23,94 +30,150 @@ def run_pipeline(fact_packets: List[str]) -> Dict:
 # Internal helpers (keep orchestrator composable)
 # ------------------------------------------------------------
 
-def _run_deterministic(fact_packets: List[str]) -> Dict:
-    return assess_risk_from_packets(fact_packets)
 
 
-def _run_llm(fact_packets: List[str]) -> Dict:
-    prompt = build_prompt(fact_packets)
-    return call_llm_with_retry(prompt)
+# modified to the following version: 
+def _run_deterministic(fact_packets: List[str]) -> StageResult:
+    t0 = time.perf_counter()
+
+    try:
+        result = assess_risk_from_packets(fact_packets)
+        latency_ms = (time.perf_counter() - t0) * 1000
+
+        return StageResult(
+            status=StageStatus.SUCCESS,
+            data=result,
+            error=None,
+            latency_ms=latency_ms,
+        )
+
+    except Exception as e:
+        latency_ms = (time.perf_counter() - t0) * 1000
+
+        return StageResult(
+            status=StageStatus.FAILED,
+            data=None,
+            error=str(e),
+            latency_ms=latency_ms,
+        )
 
 
-def _cross_check(deterministic_result: Dict, llm_result: Dict) -> Tuple[List[Dict], float, str]:
+
+
+
+
+##### 
+def _run_llm(fact_packets: List[str]) -> StageResult:
+    t0 = time.perf_counter()
+
+    try:
+        prompt = build_prompt(fact_packets)
+        result = call_llm_with_retry(prompt)
+        latency_ms = (time.perf_counter() - t0) * 1000
+
+        return StageResult(
+            status=StageStatus.SUCCESS,
+            data=result,
+            error=None,
+            latency_ms=latency_ms,
+        )
+
+    except Exception as e:
+        latency_ms = (time.perf_counter() - t0) * 1000
+
+        return StageResult(
+            status=StageStatus.FAILED,
+            data=None,
+            error=str(e),
+            latency_ms=latency_ms,
+        )
+
+
+
+### Wrap _cross_check with Failure Boundary + Upstream Gating
+
+
+def _cross_check(det_result: StageResult, llm_result: StageResult) -> StageResult:
     """
     Compare deterministic vs LLM project risks.
-    Returns: (inconsistencies, consistency_ratio, confidence)
+
+    StageResult.data on SUCCESS:
+      {
+        "inconsistencies": List[Dict],
+        "consistency_ratio": float,
+        "confidence": str
+      }
     """
-    deterministic_projects = {
-        item["fact_packet"]: item["risk_level"]
-        for item in deterministic_result.get("assessments", [])
-    }
+    # Gate: only cross-check when upstream stages are SUCCESS
+    if det_result.status != StageStatus.SUCCESS or llm_result.status != StageStatus.SUCCESS:
+        return StageResult(
+            status=StageStatus.SKIPPED,
+            data=None,
+            error="Skipped cross-check because upstream stage failed or was skipped.",
+            latency_ms=0.0,
+        )
 
-    inconsistencies: List[Dict] = []
+    t0 = time.perf_counter()
+    try:
+        deterministic_result: Dict = det_result.data or {}
+        llm_result_data: Dict = llm_result.data or {}
 
-    for proj in llm_result.get("projects", []):
-        project_id = proj.get("project_id")
-        if not project_id:
-            continue
+        deterministic_projects = {
+            item["fact_packet"]: item["risk_level"]
+            for item in deterministic_result.get("assessments", [])
+        }
 
-        for packet, det_risk in deterministic_projects.items():
-            if f"Project: {project_id}" in packet:
-                if proj.get("risk") != det_risk:
-                    inconsistencies.append(
-                        {
-                            "project_id": project_id,
-                            "deterministic_risk": det_risk,
-                            "llm_risk": proj.get("risk"),
-                        }
-                    )
+        inconsistencies: List[Dict] = []
 
-    total = len(llm_result.get("projects", []))
-    consistency_ratio = 1.0 if total == 0 else 1 - (len(inconsistencies) / total)
+        for proj in llm_result_data.get("projects", []):
+            project_id = proj.get("project_id")
+            if not project_id:
+                continue
 
-    confidence = "HIGH"
-    if consistency_ratio < 1.0:
-        confidence = "MEDIUM"
-    if consistency_ratio < 0.5:
-        confidence = "LOW"
+            for packet, det_risk in deterministic_projects.items():
+                if f"Project: {project_id}" in packet:
+                    if proj.get("risk") != det_risk:
+                        inconsistencies.append(
+                            {
+                                "project_id": project_id,
+                                "deterministic_risk": det_risk,
+                                "llm_risk": proj.get("risk"),
+                            }
+                        )
 
-    return inconsistencies, consistency_ratio, confidence
+        total = len(llm_result_data.get("projects", []))
+        consistency_ratio = 1.0 if total == 0 else 1 - (len(inconsistencies) / total)
+
+        confidence = "HIGH"
+        if consistency_ratio < 1.0:
+            confidence = "MEDIUM"
+        if consistency_ratio < 0.5:
+            confidence = "LOW"
+
+        payload = {
+            "inconsistencies": inconsistencies,
+            "consistency_ratio": consistency_ratio,
+            "confidence": confidence,
+        }
+
+        latency_ms = (time.perf_counter() - t0) * 1000
+        return StageResult(
+            status=StageStatus.SUCCESS,
+            data=payload,
+            error=None,
+            latency_ms=latency_ms,
+        )
+
+    except Exception as e:
+        latency_ms = (time.perf_counter() - t0) * 1000
+        return StageResult(
+            status=StageStatus.FAILED,
+            data=None,
+            error=str(e),
+            latency_ms=latency_ms,
+        )
 
 
-# ------------------------------------------------------------
-# Main
-# ------------------------------------------------------------
-
-# def run_full_assessment(fact_packets: List[str]) -> Dict:
-#     # Deterministic, safe routing input (temporary until user_query is wired in)
-#     routing_input = " ".join(fact_packets[:3])
-
-#     try:
-#         strategy = choose_branch(routing_input)
-#     except Exception:
-#         strategy = Strategy.GENERAL
-
-#     # --- ANALYTICS ONLY ---
-#     if strategy == Strategy.ANALYTICS:
-#         deterministic_result = _run_deterministic(fact_packets)
-#         return {
-#             "deterministic_layer": deterministic_result,
-#             "llm_layer": None,
-#             "inconsistencies": [],
-#             "confidence": "HIGH",
-#             "consistency_ratio": 1.0,
-#             "strategy": strategy.value,
-#         }
-
-#     # --- HYBRID (POLICY / SUMMARY / GENERAL) ---
-#     deterministic_result = _run_deterministic(fact_packets)
-#     llm_result = _run_llm(fact_packets)
-
-#     inconsistencies, consistency_ratio, confidence = _cross_check(deterministic_result, llm_result)
-
-#     return {
-#         "deterministic_layer": deterministic_result,
-#         "llm_layer": llm_result,
-#         "inconsistencies": inconsistencies,
-#         "confidence": confidence,
-#         "consistency_ratio": consistency_ratio,
-#         "strategy": strategy.value,
-#     }
 
 def _build_execution_plan(strategy: Strategy) -> ExecutionPlan:
     if strategy == Strategy.ANALYTICS:
@@ -141,8 +204,21 @@ def _build_execution_plan(strategy: Strategy) -> ExecutionPlan:
         run_cross_check=True,
     )
 
+
+
+
+
+
+
+def _stage_result_to_dict(r: StageResult) -> Dict:
+    return {
+        "status": r.status.value,
+        "error": r.error,
+        "latency_ms": r.latency_ms,
+    }
+
+
 def run_full_assessment(fact_packets: List[str]) -> Dict:
-    # Deterministic, safe routing input (temporary until user_query is wired in)
     routing_input = " ".join(fact_packets[:3])
 
     try:
@@ -150,175 +226,120 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
     except Exception:
         strategy = Strategy.GENERAL
 
-    # # --- ANALYTICS: deterministic only ---
-    # if strategy == Strategy.ANALYTICS:
-    #     deterministic_result = _run_deterministic(fact_packets)
-    #     return {
-    #         "deterministic_layer": deterministic_result,
-    #         "llm_layer": None,
-    #         "inconsistencies": [],
-    #         "confidence": "HIGH",
-    #         "consistency_ratio": 1.0,
-    #         "strategy": strategy.value,
-    #     }
-
-    # # --- SUMMARY: LLM only ---
-    # if strategy == Strategy.SUMMARY:
-    #     llm_result = _run_llm(fact_packets)
-    #     return {
-    #         "deterministic_layer": None,
-    #         "llm_layer": llm_result,
-    #         "inconsistencies": [],
-    #         "confidence": "MEDIUM",
-    #         "consistency_ratio": None,
-    #         "strategy": strategy.value,
-    #     }
-
-    # # --- POLICY: hybrid with governance ---
-    # if strategy == Strategy.POLICY:
-    #     deterministic_result = _run_deterministic(fact_packets)
-    #     llm_result = _run_llm(fact_packets)
-
-    #     inconsistencies, consistency_ratio, confidence = _cross_check(
-    #         deterministic_result, llm_result
-    #     )
-
-    #     return {
-    #         "deterministic_layer": deterministic_result,
-    #         "llm_layer": llm_result,
-    #         "inconsistencies": inconsistencies,
-    #         "confidence": confidence,
-    #         "consistency_ratio": consistency_ratio,
-    #         "strategy": strategy.value,
-    #     }
-
-    # # --- GENERAL: safe hybrid default ---
-    # deterministic_result = _run_deterministic(fact_packets)
-    # llm_result = _run_llm(fact_packets)
-
-    # inconsistencies, consistency_ratio, confidence = _cross_check(
-    #     deterministic_result, llm_result
-    # )
-
-    # return {
-    #     "deterministic_layer": deterministic_result,
-    #     "llm_layer": llm_result,
-    #     "inconsistencies": inconsistencies,
-    #     "confidence": confidence,
-    #     "consistency_ratio": consistency_ratio,
-    #     "strategy": strategy.value,
-    # }
-
-
     plan = _build_execution_plan(strategy)
 
-    deterministic_result = None
-    llm_result = None
+    # StageResults (the new truth)
+    det_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
+    llm_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
+    cc_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
+
+    # Backward-compatible outputs
     inconsistencies = []
     consistency_ratio = None
     confidence = None
 
-# --- Execute Plan ---
-    # if plan.run_deterministic:
-    #     deterministic_result = _run_deterministic(fact_packets)
-
-    # Even mofre pro style to measure the run time. 
+    # Old metrics (keep existing contract)
     deterministic_ms = None
     llm_ms = None
 
     start_total = time.perf_counter()
 
+    # --- Deterministic ---
     if plan.run_deterministic:
         start = time.perf_counter()
-        deterministic_result = _run_deterministic(fact_packets)
+        det_res = _run_deterministic(fact_packets)  # returns StageResult now
         deterministic_ms = (time.perf_counter() - start) * 1000
 
-##### later we added following. More pro. If no need to LLM not even call him save tome and money
+    # --- Early Exit Optimization (only if deterministic succeeded) ---
+    if plan.run_llm and det_res.status == StageStatus.SUCCESS:
+        assessments = (det_res.data or {}).get("assessments", [])
+        if assessments and all(item.get("risk_level") == "LOW" for item in assessments):
+            # Skip LLM + cross-check
+            llm_res = StageResult(
+                status=StageStatus.SKIPPED,
+                data=None,
+                error="Skipped LLM due to early-exit: all deterministic risks LOW.",
+                latency_ms=0.0,
+            )
+            cc_res = StageResult(
+                status=StageStatus.SKIPPED,
+                data=None,
+                error="Skipped cross-check because LLM was skipped by early-exit.",
+                latency_ms=0.0,
+            )
+            confidence = "HIGH"
+            consistency_ratio = 1.0
 
+            total_ms = (time.perf_counter() - start_total) * 1000
+            return {
+                "strategy": strategy.value,
+                "execution_plan": {
+                    "run_deterministic": plan.run_deterministic,
+                    "run_llm": False,          # actually skipped
+                    "run_cross_check": False,  # actually skipped
+                },
+                "deterministic_layer": det_res.data,
+                "llm_layer": None,
+                "inconsistencies": [],
+                "confidence": confidence,
+                "consistency_ratio": consistency_ratio,
+                "metrics": {
+                    "deterministic_ms": deterministic_ms,
+                    "llm_ms": None,
+                    "total_ms": total_ms,
+                },
+                "stage_results": {
+                    "deterministic": _stage_result_to_dict(det_res),
+                    "llm": _stage_result_to_dict(llm_res),
+                    "cross_check": _stage_result_to_dict(cc_res),
+                },
+            }
 
-    # --- Early Exit Optimization ---
-    if (
-        plan.run_llm
-        and deterministic_result
-        and all(
-            item["risk_level"] == "LOW"
-            for item in deterministic_result.get("assessments", [])
-        )
-    ):
-        # Skip LLM — deterministic result sufficient
-        llm_result = None
-        confidence = "HIGH"
-        consistency_ratio = 1.0
-
-        total_ms = (time.perf_counter() - start_total) * 1000
-
-        return {
-            "strategy": strategy.value,
-            "execution_plan": {
-                "run_deterministic": plan.run_deterministic,
-                "run_llm": False,  # skipped
-                "run_cross_check": False,
-            },
-            "deterministic_layer": deterministic_result,
-            "llm_layer": None,
-            "inconsistencies": [],
-            "confidence": confidence,
-            "consistency_ratio": consistency_ratio,
-            "metrics": {
-                "deterministic_ms": deterministic_ms,
-                "llm_ms": None,
-                "total_ms": total_ms,
-            },
-        }
-
-
-
+    # --- LLM ---
     if plan.run_llm:
         start = time.perf_counter()
-        llm_result = _run_llm(fact_packets)
+        llm_res = _run_llm(fact_packets)  # returns StageResult now
         llm_ms = (time.perf_counter() - start) * 1000
+
+    # --- Cross-check ---
+    if plan.run_cross_check:
+        cc_res = _cross_check(det_res, llm_res)  # returns StageResult now
+        if cc_res.status == StageStatus.SUCCESS:
+            cc = cc_res.data or {}
+            inconsistencies = cc.get("inconsistencies", [])
+            consistency_ratio = cc.get("consistency_ratio")
+            confidence = cc.get("confidence")
+
+    # --- Confidence defaults (same intent as your original) ---
+    if confidence is None:
+        if plan.run_deterministic and not plan.run_llm:
+            confidence = "HIGH"
+            consistency_ratio = 1.0
+        elif plan.run_llm and not plan.run_cross_check:
+            confidence = "MEDIUM"
 
     total_ms = (time.perf_counter() - start_total) * 1000
 
-    if plan.run_llm:
-        llm_result = _run_llm(fact_packets)
-
-    if plan.run_cross_check and deterministic_result and llm_result:
-        inconsistencies, consistency_ratio, confidence = _cross_check(
-            deterministic_result, llm_result
-        )
-    elif plan.run_deterministic and not plan.run_llm:
-        confidence = "HIGH"
-    elif plan.run_llm and not plan.run_cross_check:
-        confidence = "MEDIUM"
-
-    # return {
-    #     "deterministic_layer": deterministic_result,
-    #     "llm_layer": llm_result,
-    #     "inconsistencies": inconsistencies,
-    #     "confidence": confidence,
-    #     "consistency_ratio": consistency_ratio,
-    #     "strategy": strategy.value,
-    # }
-##################################################
-    ### This is better! why we will understand what plan was chosen:
-    # by seeing the final output ------------> Better monitoring human involvement"
     return {
-    "strategy": strategy.value,
-    "execution_plan": {
-        "run_deterministic": plan.run_deterministic,
-        "run_llm": plan.run_llm,
-        "run_cross_check": plan.run_cross_check,
-    },
-    "deterministic_layer": deterministic_result,
-    "llm_layer": llm_result,
-    "inconsistencies": inconsistencies,
-    "confidence": confidence,
-    "consistency_ratio": consistency_ratio,
-
-    "metrics": {
-    "deterministic_ms": deterministic_ms,
-    "llm_ms": llm_ms,
-    "total_ms": total_ms,
-}
-}
+        "strategy": strategy.value,
+        "execution_plan": {
+            "run_deterministic": plan.run_deterministic,
+            "run_llm": plan.run_llm,
+            "run_cross_check": plan.run_cross_check,
+        },
+        "deterministic_layer": det_res.data if det_res.status == StageStatus.SUCCESS else None,
+        "llm_layer": llm_res.data if llm_res.status == StageStatus.SUCCESS else None,
+        "inconsistencies": inconsistencies,
+        "confidence": confidence,
+        "consistency_ratio": consistency_ratio,
+        "metrics": {
+            "deterministic_ms": deterministic_ms,
+            "llm_ms": llm_ms,
+            "total_ms": total_ms,
+        },
+        "stage_results": {
+            "deterministic": _stage_result_to_dict(det_res),
+            "llm": _stage_result_to_dict(llm_res),
+            "cross_check": _stage_result_to_dict(cc_res),
+        },
+    }

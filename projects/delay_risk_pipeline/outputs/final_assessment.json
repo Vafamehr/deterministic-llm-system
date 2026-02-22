@@ -19,35 +19,55 @@
     ]
   },
   "llm_layer": {
-    "overall_risk": "MEDIUM",
+    "overall_risk": "LOW",
     "projects": [
       {
         "project_id": "A",
         "risk": "LOW",
-        "reason": "Consistent progress and moderate staffing"
+        "reason": "Stable progress and consistent staffing"
       },
       {
         "project_id": "B",
-        "risk": "HIGH",
-        "reason": "Low staffing with high volatility"
+        "risk": "MEDIUM",
+        "reason": "Slightly higher volatility in staffing"
       }
     ],
-    "next_actions": [
-      "Monitor B's staffing stability"
-    ]
+    "next_actions": []
   },
   "inconsistencies": [
     {
       "project_id": "A",
       "deterministic_risk": "MEDIUM",
       "llm_risk": "LOW"
+    },
+    {
+      "project_id": "B",
+      "deterministic_risk": "HIGH",
+      "llm_risk": "MEDIUM"
     }
   ],
-  "confidence": "MEDIUM",
-  "consistency_ratio": 0.5,
+  "confidence": "LOW",
+  "consistency_ratio": 0.0,
   "metrics": {
-    "deterministic_ms": 0.01409999094903469,
-    "llm_ms": 43671.80949996691,
-    "total_ms": 43671.83260002639
+    "deterministic_ms": 0.011899974197149277,
+    "llm_ms": 42340.59029992204,
+    "total_ms": 42340.64049995504
+  },
+  "stage_results": {
+    "deterministic": {
+      "status": "SUCCESS",
+      "error": null,
+      "latency_ms": 0.006600050255656242
+    },
+    "llm": {
+      "status": "SUCCESS",
+      "error": null,
+      "latency_ms": 42340.573300025426
+    },
+    "cross_check": {
+      "status": "SUCCESS",
+      "error": null,
+      "latency_ms": 0.020700041204690933
+    }
   }
 }
