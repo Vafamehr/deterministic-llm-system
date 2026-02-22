@@ -1,4 +1,10 @@
 {
+  "strategy": "general",
+  "execution_plan": {
+    "run_deterministic": true,
+    "run_llm": true,
+    "run_cross_check": true
+  },
   "deterministic_layer": {
     "num_projects": 2,
     "assessments": [
@@ -18,16 +24,16 @@
       {
         "project_id": "A",
         "risk": "LOW",
-        "reason": "Consistent progress and stable staffing."
+        "reason": "Consistent progress and moderate staffing"
       },
       {
         "project_id": "B",
-        "risk": "MEDIUM",
-        "reason": "Limited data, but high staffing volatility suggests potential risks."
+        "risk": "HIGH",
+        "reason": "Low staffing with high volatility"
       }
     ],
     "next_actions": [
-      "Review Project B's staffing volatility."
+      "Monitor B's staffing stability"
     ]
   },
   "inconsistencies": [
@@ -35,14 +41,13 @@
       "project_id": "A",
       "deterministic_risk": "MEDIUM",
       "llm_risk": "LOW"
-    },
-    {
-      "project_id": "B",
-      "deterministic_risk": "HIGH",
-      "llm_risk": "MEDIUM"
     }
   ],
-  "confidence": "LOW",
-  "consistency_ratio": 0.0,
-  "strategy": "general"
+  "confidence": "MEDIUM",
+  "consistency_ratio": 0.5,
+  "metrics": {
+    "deterministic_ms": 0.01409999094903469,
+    "llm_ms": 43671.80949996691,
+    "total_ms": 43671.83260002639
+  }
 }
