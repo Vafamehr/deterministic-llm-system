@@ -96,3 +96,39 @@ User → Router → Linear Pipeline
 
 System status:
 **Routed, deterministic, production-structured linear pipeline.**
+
+
+
+Orchestrator Refactor (Chunk 3)
+
+Previously, run_full_assessment() contained:
+
+routing
+
+deterministic scoring
+
+LLM execution
+
+cross-check logic
+
+Now it is split into:
+
+_run_deterministic()
+
+_run_llm()
+
+_cross_check()
+
+run_full_assessment() is now only a coordination layer.
+
+Impact:
+
+Clear separation of concerns
+
+Swappable components
+
+Testable layers
+
+Production-safe structure
+
+System remains linear and deterministic, but is now modular and scalable.

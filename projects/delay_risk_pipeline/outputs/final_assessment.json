@@ -1,0 +1,48 @@
+{
+  "deterministic_layer": {
+    "num_projects": 2,
+    "assessments": [
+      {
+        "fact_packet": "Project: A\nProgress: 1.00\nWeeks observed: 3\nAvg staffing: 10.00\nStaffing volatility (3w std avg): 0.57",
+        "risk_level": "MEDIUM"
+      },
+      {
+        "fact_packet": "Project: B\nProgress: 1.00\nWeeks observed: 2\nAvg staffing: 6.00\nStaffing volatility (3w std avg): 0.71",
+        "risk_level": "HIGH"
+      }
+    ]
+  },
+  "llm_layer": {
+    "overall_risk": "MEDIUM",
+    "projects": [
+      {
+        "project_id": "A",
+        "risk": "LOW",
+        "reason": "Consistent progress and stable staffing."
+      },
+      {
+        "project_id": "B",
+        "risk": "MEDIUM",
+        "reason": "Limited data, but high staffing volatility suggests potential risks."
+      }
+    ],
+    "next_actions": [
+      "Review Project B's staffing volatility."
+    ]
+  },
+  "inconsistencies": [
+    {
+      "project_id": "A",
+      "deterministic_risk": "MEDIUM",
+      "llm_risk": "LOW"
+    },
+    {
+      "project_id": "B",
+      "deterministic_risk": "HIGH",
+      "llm_risk": "MEDIUM"
+    }
+  ],
+  "confidence": "LOW",
+  "consistency_ratio": 0.0,
+  "strategy": "general"
+}
