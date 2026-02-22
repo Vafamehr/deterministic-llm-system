@@ -74,6 +74,44 @@ def _cross_check(deterministic_result: Dict, llm_result: Dict) -> Tuple[List[Dic
 # Main
 # ------------------------------------------------------------
 
+# def run_full_assessment(fact_packets: List[str]) -> Dict:
+#     # Deterministic, safe routing input (temporary until user_query is wired in)
+#     routing_input = " ".join(fact_packets[:3])
+
+#     try:
+#         strategy = choose_branch(routing_input)
+#     except Exception:
+#         strategy = Strategy.GENERAL
+
+#     # --- ANALYTICS ONLY ---
+#     if strategy == Strategy.ANALYTICS:
+#         deterministic_result = _run_deterministic(fact_packets)
+#         return {
+#             "deterministic_layer": deterministic_result,
+#             "llm_layer": None,
+#             "inconsistencies": [],
+#             "confidence": "HIGH",
+#             "consistency_ratio": 1.0,
+#             "strategy": strategy.value,
+#         }
+
+#     # --- HYBRID (POLICY / SUMMARY / GENERAL) ---
+#     deterministic_result = _run_deterministic(fact_packets)
+#     llm_result = _run_llm(fact_packets)
+
+#     inconsistencies, consistency_ratio, confidence = _cross_check(deterministic_result, llm_result)
+
+#     return {
+#         "deterministic_layer": deterministic_result,
+#         "llm_layer": llm_result,
+#         "inconsistencies": inconsistencies,
+#         "confidence": confidence,
+#         "consistency_ratio": consistency_ratio,
+#         "strategy": strategy.value,
+#     }
+
+
+
 def run_full_assessment(fact_packets: List[str]) -> Dict:
     # Deterministic, safe routing input (temporary until user_query is wired in)
     routing_input = " ".join(fact_packets[:3])
@@ -83,7 +121,7 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
     except Exception:
         strategy = Strategy.GENERAL
 
-    # --- ANALYTICS ONLY ---
+    # --- ANALYTICS: deterministic only ---
     if strategy == Strategy.ANALYTICS:
         deterministic_result = _run_deterministic(fact_packets)
         return {
@@ -95,11 +133,43 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             "strategy": strategy.value,
         }
 
-    # --- HYBRID (POLICY / SUMMARY / GENERAL) ---
+    # --- SUMMARY: LLM only ---
+    if strategy == Strategy.SUMMARY:
+        llm_result = _run_llm(fact_packets)
+        return {
+            "deterministic_layer": None,
+            "llm_layer": llm_result,
+            "inconsistencies": [],
+            "confidence": "MEDIUM",
+            "consistency_ratio": None,
+            "strategy": strategy.value,
+        }
+
+    # --- POLICY: hybrid with governance ---
+    if strategy == Strategy.POLICY:
+        deterministic_result = _run_deterministic(fact_packets)
+        llm_result = _run_llm(fact_packets)
+
+        inconsistencies, consistency_ratio, confidence = _cross_check(
+            deterministic_result, llm_result
+        )
+
+        return {
+            "deterministic_layer": deterministic_result,
+            "llm_layer": llm_result,
+            "inconsistencies": inconsistencies,
+            "confidence": confidence,
+            "consistency_ratio": consistency_ratio,
+            "strategy": strategy.value,
+        }
+
+    # --- GENERAL: safe hybrid default ---
     deterministic_result = _run_deterministic(fact_packets)
     llm_result = _run_llm(fact_packets)
 
-    inconsistencies, consistency_ratio, confidence = _cross_check(deterministic_result, llm_result)
+    inconsistencies, consistency_ratio, confidence = _cross_check(
+        deterministic_result, llm_result
+    )
 
     return {
         "deterministic_layer": deterministic_result,

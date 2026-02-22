@@ -132,3 +132,88 @@ Testable layers
 Production-safe structure
 
 System remains linear and deterministic, but is now modular and scalable.
+
+
+
+#####################################################
+
+# Day 25 — Chunk 4
+Explicit Strategy → Execution Mapping
+What Changed
+
+Previously:
+All non-analytics strategies ran the same hybrid path.
+
+Now:
+Each strategy maps to a clearly defined execution plan.
+
+Strategy Execution Contracts
+ANALYTICS
+
+Run deterministic engine only
+
+No LLM
+
+Confidence = HIGH
+
+Pure rules/statistics mode
+
+SUMMARY
+
+Run LLM only
+
+No deterministic scoring
+
+No cross-check
+
+Narrative mode
+
+POLICY
+
+Run deterministic engine
+
+Run LLM
+
+Run cross-check governance
+
+Confidence derived from agreement
+
+GENERAL (Fallback)
+
+Hybrid execution
+
+Deterministic + LLM
+
+Cross-check enabled
+
+Why This Matters
+
+Routing now controls execution behavior, not just labels.
+
+Each strategy has:
+
+Clear responsibilities
+
+Predictable outputs
+
+Defined governance level
+
+The system is now:
+
+Strategy-driven
+
+Modular
+
+Observable
+
+Production-structured
+
+Architectural Upgrade Achieved
+
+User Intent
+→ Strategy Selection
+→ Explicit Execution Plan
+→ Structured Final Assessment
+
+Day 25 complete:
+Routed, modular, strategy-controlled AI system.
