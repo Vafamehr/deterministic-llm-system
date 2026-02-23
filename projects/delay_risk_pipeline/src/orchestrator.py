@@ -12,6 +12,8 @@ import time
 from stage_result import StageResult
 from stage_status import StageStatus
 
+from failure_policy import evaluate_failure_policy
+
 
 
 
@@ -218,6 +220,20 @@ def _stage_result_to_dict(r: StageResult) -> Dict:
     }
 
 
+
+
+def _apply_governance_to_confidence(governance: dict, confidence: str | None) -> str:
+    # If system says "needs review", confidence cannot be HIGH.
+    if governance.get("needs_review") is True:
+        if confidence == "HIGH" or confidence is None:
+            return "MEDIUM"
+    return confidence or "MEDIUM"
+
+
+
+
+
+
 def run_full_assessment(fact_packets: List[str]) -> Dict:
     routing_input = " ".join(fact_packets[:3])
 
@@ -319,6 +335,11 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             confidence = "MEDIUM"
 
     total_ms = (time.perf_counter() - start_total) * 1000
+    governance = evaluate_failure_policy(det_res, llm_res, cc_res)
+    if hasattr(governance.get("degradation_mode"), "value"):
+        governance["degradation_mode"] = governance["degradation_mode"].value
+        
+    confidence = _apply_governance_to_confidence(governance, confidence)
 
     return {
         "strategy": strategy.value,
@@ -327,6 +348,14 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             "run_llm": plan.run_llm,
             "run_cross_check": plan.run_cross_check,
         },
+        
+        "stage_results": {
+            "deterministic": _stage_result_to_dict(det_res),
+            "llm": _stage_result_to_dict(llm_res),
+            "cross_check": _stage_result_to_dict(cc_res),
+        },
+        "governance": governance,
+
         "deterministic_layer": det_res.data if det_res.status == StageStatus.SUCCESS else None,
         "llm_layer": llm_res.data if llm_res.status == StageStatus.SUCCESS else None,
         "inconsistencies": inconsistencies,
@@ -336,10 +365,5 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             "deterministic_ms": deterministic_ms,
             "llm_ms": llm_ms,
             "total_ms": total_ms,
-        },
-        "stage_results": {
-            "deterministic": _stage_result_to_dict(det_res),
-            "llm": _stage_result_to_dict(llm_res),
-            "cross_check": _stage_result_to_dict(cc_res),
-        },
+        }
     }
