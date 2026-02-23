@@ -15,7 +15,8 @@ from stage_status import StageStatus
 from failure_policy import evaluate_failure_policy
 
 
-
+from agent_controller import AgentController
+from agent_action import AgentAction
 
 
 
@@ -244,6 +245,9 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     plan = _build_execution_plan(strategy)
 
+    # #TODO: delete!!!!!!!!
+    # plan.run_llm = False
+
     # StageResults (the new truth)
     det_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
     llm_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
@@ -262,8 +266,12 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     # --- Deterministic ---
     if plan.run_deterministic:
+        
+
         start = time.perf_counter()
         det_res = _run_deterministic(fact_packets)  # returns StageResult now
+        # #TODO: delete!!!!!!
+        # det_res.status = StageStatus.FAILED
         deterministic_ms = (time.perf_counter() - start) * 1000
 
     # --- Early Exit Optimization (only if deterministic succeeded) ---
@@ -312,10 +320,12 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             }
 
     # --- LLM ---
+    llm_ran = False
     if plan.run_llm:
         start = time.perf_counter()
         llm_res = _run_llm(fact_packets)  # returns StageResult now
         llm_ms = (time.perf_counter() - start) * 1000
+        llm_ran = True
 
     # --- Cross-check ---
     if plan.run_cross_check:
@@ -341,6 +351,47 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         
     confidence = _apply_governance_to_confidence(governance, confidence)
 
+    agent = AgentController(max_steps=1)
+
+
+    decision = agent.decide(
+    goal="Produce a safe, governance-aligned assessment",
+    step_index=0,
+    stage_results={
+        "deterministic": _stage_result_to_dict(det_res),
+        "llm": _stage_result_to_dict(llm_res),
+        "cross_check": _stage_result_to_dict(cc_res),
+    },
+    )
+
+    hard_stop = governance.get("hard_stop", False)
+
+    if (
+        not hard_stop
+        and decision.action == AgentAction.RUN_LLM
+        and not llm_ran
+    ):
+        start = time.perf_counter()
+        llm_res = _run_llm(fact_packets)
+        llm_ms = (time.perf_counter() - start) * 1000
+        llm_ran = True
+
+        # If cross-check is part of the plan, re-run it now that LLM exists
+        if plan.run_cross_check:
+            cc_res = _cross_check(det_res, llm_res)
+            if cc_res.status == StageStatus.SUCCESS:
+                cc = cc_res.data or {}
+                inconsistencies = cc.get("inconsistencies", [])
+                consistency_ratio = cc.get("consistency_ratio")
+                confidence = cc.get("confidence")
+
+        # Re-evaluate governance + confidence after follow-up
+        governance = evaluate_failure_policy(det_res, llm_res, cc_res)
+        if hasattr(governance.get("degradation_mode"), "value"):
+            governance["degradation_mode"] = governance["degradation_mode"].value
+        confidence = _apply_governance_to_confidence(governance, confidence)
+
+
     return {
         "strategy": strategy.value,
         "execution_plan": {
@@ -365,5 +416,14 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             "deterministic_ms": deterministic_ms,
             "llm_ms": llm_ms,
             "total_ms": total_ms,
+        },
+        "agent": {
+        "max_steps": agent.max_steps,
+        "decision": {
+            "action": decision.action.value,
+            "reason": decision.reason,
+            "requested_by": decision.requested_by,
+            "step_index": decision.step_index,
+        }
         }
     }

@@ -1,8 +1,8 @@
 from typing import Dict, List
 
-from stage_status import StageStatus
-from stage_result import StageResult
 from degradation_mode import DegradationMode
+from stage_result import StageResult
+from stage_status import StageStatus
 
 
 def evaluate_failure_policy(
@@ -16,6 +16,17 @@ def evaluate_failure_policy(
     # Rule 1 — Deterministic failed
     if det_res.status == StageStatus.FAILED:
         escalation_reasons.append("DETERMINISTIC_FAILED")
+
+        # If LLM succeeded, we are not in total failure.
+        if llm_res.status == StageStatus.SUCCESS:
+            escalation_reasons.append("LLM_FALLBACK_USED")
+            return {
+                "needs_review": True,
+                "degradation_mode": DegradationMode.NO_CROSS_CHECK,
+                "escalation_reasons": escalation_reasons,
+            }
+
+        # Otherwise: no usable fallback
         return {
             "needs_review": True,
             "degradation_mode": DegradationMode.TOTAL_FAILURE,

@@ -2,79 +2,67 @@
   "strategy": "general",
   "execution_plan": {
     "run_deterministic": true,
-    "run_llm": true,
+    "run_llm": false,
     "run_cross_check": true
   },
   "stage_results": {
     "deterministic": {
-      "status": "SUCCESS",
+      "status": "FAILED",
       "error": null,
-      "latency_ms": 0.00700005330145359
+      "latency_ms": 0.0068999361246824265
     },
     "llm": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 43198.437500046566
+      "latency_ms": 57091.94810001645
     },
     "cross_check": {
-      "status": "SUCCESS",
-      "error": null,
-      "latency_ms": 0.02759997732937336
+      "status": "SKIPPED",
+      "error": "Skipped cross-check because upstream stage failed or was skipped.",
+      "latency_ms": 0.0
     }
   },
   "governance": {
-    "needs_review": false,
-    "degradation_mode": "NONE",
-    "escalation_reasons": []
-  },
-  "deterministic_layer": {
-    "num_projects": 2,
-    "assessments": [
-      {
-        "fact_packet": "Project: A\nProgress: 1.00\nWeeks observed: 3\nAvg staffing: 10.00\nStaffing volatility (3w std avg): 0.57",
-        "risk_level": "MEDIUM"
-      },
-      {
-        "fact_packet": "Project: B\nProgress: 1.00\nWeeks observed: 2\nAvg staffing: 6.00\nStaffing volatility (3w std avg): 0.71",
-        "risk_level": "HIGH"
-      }
+    "needs_review": true,
+    "degradation_mode": "TOTAL_FAILURE",
+    "escalation_reasons": [
+      "DETERMINISTIC_FAILED"
     ]
   },
+  "deterministic_layer": null,
   "llm_layer": {
-    "overall_risk": "LOW",
+    "overall_risk": "MEDIUM",
     "projects": [
       {
         "project_id": "A",
         "risk": "LOW",
-        "reason": "Consistent progress and moderate staffing stability"
+        "reason": "stable progress and moderate staffing"
       },
       {
         "project_id": "B",
         "risk": "MEDIUM",
-        "reason": "Short observation period and high staffing volatility"
+        "reason": "high staffing volatility"
       }
     ],
     "next_actions": [
-      "Monitor progress and staffing dynamics for B"
+      "Monitor project B for continued stability"
     ]
   },
-  "inconsistencies": [
-    {
-      "project_id": "A",
-      "deterministic_risk": "MEDIUM",
-      "llm_risk": "LOW"
-    },
-    {
-      "project_id": "B",
-      "deterministic_risk": "HIGH",
-      "llm_risk": "MEDIUM"
-    }
-  ],
-  "confidence": "LOW",
-  "consistency_ratio": 0.0,
+  "inconsistencies": [],
+  "confidence": "MEDIUM",
+  "consistency_ratio": 1.0,
   "metrics": {
-    "deterministic_ms": 0.01170008908957243,
-    "llm_ms": 43198.45680007711,
-    "total_ms": 43198.51739995647
+    "deterministic_ms": 0.012299977242946625,
+    "llm_ms": 57091.96780005004,
+    "total_ms": 0.017400016076862812
+  },
+  "agent": {
+    "max_steps": 1,
+    "decision": {
+      "action": "run_llm",
+      "reason": "Deterministic stage did not succeed; request LLM fallback",
+      "requested_by": "agent",
+      "step_index": 0
+    }
   }
 }

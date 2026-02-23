@@ -175,3 +175,102 @@ A **Single Bounded Agent Controller**:
 - may request at most one follow-up step when needed
 - must stop if governance blocks
 - produces a trace of decisions
+
+
+# Day 29 — Chunk 2: Agent Decision Object
+
+## Purpose
+Introduce a typed, JSON-safe representation of an agent’s next action.
+
+This prevents hidden reasoning and allows:
+- Observability
+- Governance inspection
+- Structured logging
+- Safe bounded control
+
+## AgentAction Enum
+
+class AgentAction(str, Enum):
+    STOP = "stop"
+    RUN_DETERMINISTIC = "run_deterministic"
+    RUN_LLM = "run_llm"
+    RUN_CROSS_CHECK = "run_cross_check"
+
+Using (str, Enum) ensures JSON-safe serialization.
+
+## AgentDecision Dataclass
+
+@dataclass
+class AgentDecision:
+    action: AgentAction
+    reason: str
+    requested_by: str = "agent"
+    step_index: Optional[int] = None
+
+## Architectural Principle
+
+Decision logic is separated from execution logic.
+
+ExecutionPlan = strategy.
+AgentDecision = bounded dynamic choice.
+
+# Day 29 — Chunk 3: AgentController Skeleton
+
+## Purpose
+Introduce a bounded decision controller that determines the next action.
+
+This controller:
+- Does NOT execute anything.
+- Only decides the next step.
+- Enforces max step limits.
+
+## Core Rule
+If step_index >= max_steps → STOP.
+
+This prevents uncontrolled loops.
+
+## Architectural Principle
+Execution belongs to Orchestrator.
+Decision logic belongs to AgentController.
+
+
+# Day 29 — Chunk 5: Context-Aware Agent Rule
+
+## Update
+AgentController now reads the structured `stage_results` dict.
+
+## Rule
+If deterministic.status != "success"
+→ request RUN_LLM (bounded by max_steps)
+
+Otherwise
+→ STOP
+
+## Architectural Impact
+Agent now:
+- Reads intermediate system state
+- Makes a bounded dynamic decision
+- Still does not execute automatically
+- Still observable
+
+
+
+# Day 29 — Chunk 6: Agent Follow-up Hook (Bounded Execution)
+
+## Problem
+The pipeline executes stages purely from ExecutionPlan.
+An agent decision was only a trace and did not affect execution.
+
+## Solution
+Add a bounded "follow-up hook":
+- Agent may request ONE extra action
+- Only if the plan did not already execute it
+- Blocked by governance hard stop
+- No loops (max_steps enforced)
+
+## Behavior
+If deterministic fails and LLM was not run by the plan:
+- Agent can request RUN_LLM
+- Run LLM once
+- Optionally run cross-check
+- Recompute governance + confidence
