@@ -2,60 +2,128 @@
   "strategy": "general",
   "execution_plan": {
     "run_deterministic": true,
-    "run_llm": false,
+    "run_llm": true,
     "run_cross_check": true
   },
   "stage_results": {
     "deterministic": {
-      "status": "FAILED",
+      "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.0068999361246824265
+      "latency_ms": 0.010600080713629723
     },
     "llm": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 57091.94810001645
+      "latency_ms": 58357.02809994109
     },
     "cross_check": {
-      "status": "SKIPPED",
-      "error": "Skipped cross-check because upstream stage failed or was skipped.",
-      "latency_ms": 0.0
+      "status": "SUCCESS",
+      "error": null,
+      "latency_ms": 0.02010003663599491
     }
   },
   "governance": {
-    "needs_review": true,
-    "degradation_mode": "TOTAL_FAILURE",
-    "escalation_reasons": [
-      "DETERMINISTIC_FAILED"
+    "needs_review": false,
+    "degradation_mode": "NONE",
+    "escalation_reasons": []
+  },
+  "deterministic_layer": {
+    "num_projects": 2,
+    "assessments": [
+      {
+        "fact_packet": "Project: A\nProgress: 1.00\nWeeks observed: 3\nAvg staffing: 10.00\nStaffing volatility (3w std avg): 0.57",
+        "risk_level": "MEDIUM"
+      },
+      {
+        "fact_packet": "Project: B\nProgress: 1.00\nWeeks observed: 2\nAvg staffing: 6.00\nStaffing volatility (3w std avg): 0.71",
+        "risk_level": "HIGH"
+      }
     ]
   },
-  "deterministic_layer": null,
   "llm_layer": {
     "overall_risk": "MEDIUM",
     "projects": [
       {
         "project_id": "A",
         "risk": "LOW",
-        "reason": "stable progress and moderate staffing"
+        "reason": "Consistent progress and stable staffing."
       },
       {
         "project_id": "B",
-        "risk": "MEDIUM",
-        "reason": "high staffing volatility"
+        "risk": "HIGH",
+        "reason": "Unstable staffing, potentially impacting project momentum."
       }
     ],
     "next_actions": [
-      "Monitor project B for continued stability"
+      "Monitor staffing volatility in Project B"
     ]
   },
-  "inconsistencies": [],
+  "inconsistencies": [
+    {
+      "project_id": "A",
+      "deterministic_risk": "MEDIUM",
+      "llm_risk": "LOW"
+    }
+  ],
   "confidence": "MEDIUM",
-  "consistency_ratio": 1.0,
+  "consistency_ratio": 0.5,
   "metrics": {
-    "deterministic_ms": 0.012299977242946625,
-    "llm_ms": 57091.96780005004,
-    "total_ms": 0.017400016076862812
+    "deterministic_ms": 0.018900027498602867,
+    "llm_ms": 58357.045700075105,
+    "total_ms": 58357.66429989599
   },
+  "decision_trace": [
+    {
+      "step": "deterministic",
+      "status": "SUCCESS",
+      "reason": "Deterministic stage completed",
+      "data_snapshot": {
+        "latency_ms": 0.018900027498602867
+      },
+      "timestamp": "2026-02-24T17:04:57.057994"
+    },
+    {
+      "step": "llm",
+      "status": "SUCCESS",
+      "reason": "LLM stage completed",
+      "data_snapshot": {
+        "latency_ms": 58357.045700075105
+      },
+      "timestamp": "2026-02-24T17:05:55.413179"
+    },
+    {
+      "step": "cross_check",
+      "status": "SUCCESS",
+      "reason": "Cross-check completed",
+      "data_snapshot": {
+        "inconsistencies_count": 1,
+        "consistency_ratio": 0.5
+      },
+      "timestamp": "2026-02-24T17:05:55.413179"
+    },
+    {
+      "step": "governance",
+      "status": "pass",
+      "reason": "Failure policy evaluated",
+      "data_snapshot": {
+        "degradation_mode": "NONE",
+        "hard_stop": false,
+        "escalation_reasons": []
+      },
+      "timestamp": "2026-02-24T17:05:55.413179"
+    },
+    {
+      "step": "agent_decision",
+      "status": "run_llm",
+      "reason": "Deterministic stage did not succeed; request LLM fallback",
+      "data_snapshot": {
+        "requested_by": "agent",
+        "step_index": 0,
+        "max_steps": 1
+      },
+      "timestamp": "2026-02-24T17:05:55.413179"
+    }
+  ],
   "agent": {
     "max_steps": 1,
     "decision": {
