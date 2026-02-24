@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from router.dispatch import choose_branch
 from router.strategy import Strategy
@@ -233,6 +233,25 @@ def _apply_governance_to_confidence(governance: dict, confidence: str | None) ->
         if confidence == "HIGH" or confidence is None:
             return "MEDIUM"
     return confidence or "MEDIUM"
+
+
+def _summarize_trace_for_agent(trace: DecisionTrace) -> Dict:
+    """
+    Provide a minimal, structured summary of what has already happened.
+    We intentionally avoid passing the full trace to keep decisions bounded.
+    """
+
+    events = trace.to_dict()
+
+    summary = {
+        "steps_run": [e["step"] for e in events],
+        "had_early_exit": any(e["step"] == "early_exit" for e in events),
+        "llm_attempted": any(e["step"] in ("llm", "followup_llm") for e in events),
+        "governance_checks": sum(1 for e in events if "governance" in e["step"]),
+        "last_step": events[-1]["step"] if events else None,
+    }
+
+    return summary
 
 def _build_output(
     *,
@@ -495,6 +514,9 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
         confidence = _apply_governance_to_confidence(governance, confidence)
 
+        trace_context = _summarize_trace_for_agent(trace)
+
+
         agent = AgentController(max_steps=1)
         decision = agent.decide(
             goal="Produce a safe, governance-aligned assessment",
@@ -504,6 +526,7 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
                 "llm": _stage_result_to_dict(llm_res),
                 "cross_check": _stage_result_to_dict(cc_res),
             },
+            trace_context=trace_context,
         )
 
         trace.add_event(

@@ -9,17 +9,17 @@
     "deterministic": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.010600080713629723
+      "latency_ms": 0.0066999346017837524
     },
     "llm": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 58357.02809994109
+      "latency_ms": 57980.246799997985
     },
     "cross_check": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.02010003663599491
+      "latency_ms": 0.01810002140700817
     }
   },
   "governance": {
@@ -46,16 +46,16 @@
       {
         "project_id": "A",
         "risk": "LOW",
-        "reason": "Consistent progress and stable staffing."
+        "reason": "Progress is on track with steady staffing."
       },
       {
         "project_id": "B",
         "risk": "HIGH",
-        "reason": "Unstable staffing, potentially impacting project momentum."
+        "reason": "Limited data and high staffing volatility raise concerns."
       }
     ],
     "next_actions": [
-      "Monitor staffing volatility in Project B"
+      "Monitor progress, review staffing plan"
     ]
   },
   "inconsistencies": [
@@ -68,9 +68,9 @@
   "confidence": "MEDIUM",
   "consistency_ratio": 0.5,
   "metrics": {
-    "deterministic_ms": 0.018900027498602867,
-    "llm_ms": 58357.045700075105,
-    "total_ms": 58357.66429989599
+    "deterministic_ms": 0.011499971151351929,
+    "llm_ms": 57980.260600103065,
+    "total_ms": 57980.484100058675
   },
   "decision_trace": [
     {
@@ -78,18 +78,18 @@
       "status": "SUCCESS",
       "reason": "Deterministic stage completed",
       "data_snapshot": {
-        "latency_ms": 0.018900027498602867
+        "latency_ms": 0.011499971151351929
       },
-      "timestamp": "2026-02-24T17:04:57.057994"
+      "timestamp": "2026-02-24T17:25:06.277352"
     },
     {
       "step": "llm",
       "status": "SUCCESS",
       "reason": "LLM stage completed",
       "data_snapshot": {
-        "latency_ms": 58357.045700075105
+        "latency_ms": 57980.260600103065
       },
-      "timestamp": "2026-02-24T17:05:55.413179"
+      "timestamp": "2026-02-24T17:26:04.257781"
     },
     {
       "step": "cross_check",
@@ -99,7 +99,7 @@
         "inconsistencies_count": 1,
         "consistency_ratio": 0.5
       },
-      "timestamp": "2026-02-24T17:05:55.413179"
+      "timestamp": "2026-02-24T17:26:04.257781"
     },
     {
       "step": "governance",
@@ -110,7 +110,7 @@
         "hard_stop": false,
         "escalation_reasons": []
       },
-      "timestamp": "2026-02-24T17:05:55.413179"
+      "timestamp": "2026-02-24T17:26:04.257781"
     },
     {
       "step": "agent_decision",
@@ -121,7 +121,7 @@
         "step_index": 0,
         "max_steps": 1
       },
-      "timestamp": "2026-02-24T17:05:55.413179"
+      "timestamp": "2026-02-24T17:26:04.257781"
     }
   ],
   "agent": {

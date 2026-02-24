@@ -4,8 +4,12 @@
 git status
 
 ## Stage
-git add <file>
-git add -A   # only if sure
+git add <file> this is for staging. 
+git add -A   # only if sure stages all. 
+
+if you want unstage then:
+git restore --staged <file> for specific file
+git restore --staged . to unstage all files at once
 
 ## Commit
 git commit -m "feat: what changed"
