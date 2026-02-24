@@ -234,6 +234,72 @@ def _apply_governance_to_confidence(governance: dict, confidence: str | None) ->
             return "MEDIUM"
     return confidence or "MEDIUM"
 
+def _build_output(
+    *,
+    strategy,
+    plan,
+    det_res,
+    llm_res,
+    cc_res,
+    governance,
+    inconsistencies,
+    confidence,
+    consistency_ratio,
+    deterministic_ms,
+    llm_ms,
+    total_ms,
+    trace,
+    agent=None,
+    decision=None,
+    force_run_llm=None,
+    force_run_cross_check=None,
+) -> Dict:
+    """
+    Single output contract for BOTH normal path and early-exit path.
+    Keeps the API stable as run_full_assessment evolves.
+    """
+    run_llm = plan.run_llm if force_run_llm is None else force_run_llm
+    run_cc = plan.run_cross_check if force_run_cross_check is None else force_run_cross_check
+
+    out = {
+        "strategy": strategy.value,
+        "execution_plan": {
+            "run_deterministic": plan.run_deterministic,
+            "run_llm": run_llm,
+            "run_cross_check": run_cc,
+        },
+        "stage_results": {
+            "deterministic": _stage_result_to_dict(det_res),
+            "llm": _stage_result_to_dict(llm_res),
+            "cross_check": _stage_result_to_dict(cc_res),
+        },
+        "governance": governance,
+        "deterministic_layer": det_res.data if det_res.status == StageStatus.SUCCESS else None,
+        "llm_layer": llm_res.data if llm_res.status == StageStatus.SUCCESS else None,
+        "inconsistencies": inconsistencies,
+        "confidence": confidence,
+        "consistency_ratio": consistency_ratio,
+        "metrics": {
+            "deterministic_ms": deterministic_ms,
+            "llm_ms": llm_ms,
+            "total_ms": total_ms,
+        },
+        "decision_trace": trace.to_dict(),
+    }
+
+    if agent is not None and decision is not None:
+        out["agent"] = {
+            "max_steps": agent.max_steps,
+            "decision": {
+                "action": decision.action.value,
+                "reason": decision.reason,
+                "requested_by": decision.requested_by,
+                "step_index": decision.step_index,
+            },
+        }
+
+    return out
+
 
 def run_full_assessment(fact_packets: List[str]) -> Dict:
     # === 1) ROUTING + PLAN ===
@@ -348,40 +414,25 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             )
 
             # === 5) FINAL OUTPUT (single contract) ===
-            return {
-                "strategy": strategy.value,
-                "execution_plan": {
-                    "run_deterministic": plan.run_deterministic,
-                    "run_llm": False,
-                    "run_cross_check": False,
-                },
-                "stage_results": {
-                    "deterministic": _stage_result_to_dict(det_res),
-                    "llm": _stage_result_to_dict(llm_res),
-                    "cross_check": _stage_result_to_dict(cc_res),
-                },
-                "governance": governance,
-                "deterministic_layer": det_res.data,
-                "llm_layer": None,
-                "inconsistencies": [],
-                "confidence": confidence,
-                "consistency_ratio": consistency_ratio,
-                "metrics": {
-                    "deterministic_ms": deterministic_ms,
-                    "llm_ms": None,
-                    "total_ms": total_ms,
-                },
-                "decision_trace": trace.to_dict(),
-                "agent": {
-                    "max_steps": agent.max_steps,
-                    "decision": {
-                        "action": decision.action.value,
-                        "reason": decision.reason,
-                        "requested_by": decision.requested_by,
-                        "step_index": decision.step_index,
-                    },
-                },
-            }
+            return _build_output(
+                strategy=strategy,
+                plan=plan,
+                det_res=det_res,
+                llm_res=llm_res,
+                cc_res=cc_res,
+                governance=governance,
+                inconsistencies=[],
+                confidence=confidence,
+                consistency_ratio=consistency_ratio,
+                deterministic_ms=deterministic_ms,
+                llm_ms=None,
+                total_ms=total_ms,
+                trace=trace,
+                agent=agent,
+                decision=decision,
+                force_run_llm=False,
+                force_run_cross_check=False,
+            )
 
     # --- LLM ---
     llm_ran = False
@@ -524,37 +575,20 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         confidence = _apply_governance_to_confidence(governance, confidence)
 
     # === 5) FINAL OUTPUT (single contract) ===
-    return {
-        "strategy": strategy.value,
-        "execution_plan": {
-            "run_deterministic": plan.run_deterministic,
-            "run_llm": plan.run_llm,
-            "run_cross_check": plan.run_cross_check,
-        },
-        "stage_results": {
-            "deterministic": _stage_result_to_dict(det_res),
-            "llm": _stage_result_to_dict(llm_res),
-            "cross_check": _stage_result_to_dict(cc_res),
-        },
-        "governance": governance,
-        "deterministic_layer": det_res.data if det_res.status == StageStatus.SUCCESS else None,
-        "llm_layer": llm_res.data if llm_res.status == StageStatus.SUCCESS else None,
-        "inconsistencies": inconsistencies,
-        "confidence": confidence,
-        "consistency_ratio": consistency_ratio,
-        "metrics": {
-            "deterministic_ms": deterministic_ms,
-            "llm_ms": llm_ms,
-            "total_ms": total_ms,
-        },
-        "decision_trace": trace.to_dict(),
-        "agent": {
-            "max_steps": agent.max_steps,
-            "decision": {
-                "action": decision.action.value,
-                "reason": decision.reason,
-                "requested_by": decision.requested_by,
-                "step_index": decision.step_index,
-            },
-        },
-    }
+    return _build_output(
+        strategy=strategy,
+        plan=plan,
+        det_res=det_res,
+        llm_res=llm_res,
+        cc_res=cc_res,
+        governance=governance,
+        inconsistencies=inconsistencies,
+        confidence=confidence,
+        consistency_ratio=consistency_ratio,
+        deterministic_ms=deterministic_ms,
+        llm_ms=llm_ms,
+        total_ms=total_ms,
+        trace=trace,
+        agent=agent,
+        decision=decision,
+    )
