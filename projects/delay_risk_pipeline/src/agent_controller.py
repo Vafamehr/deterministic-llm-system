@@ -13,7 +13,8 @@ class AgentController:
         goal: str,
         step_index: int,
         stage_results: Dict[str, Dict[str, Any]],
-        trace_context: Optional[Dict[str, Any]] = None,  # Day 31: trace-aware
+        trace_context: Optional[Dict[str, Any]] = None, # trace aware from day 31
+        governance_context: Optional[Dict[str, Any]] = None,  # Day 32: governance-aware
     ) -> AgentDecision:
 
         # Hard boundary
@@ -26,13 +27,26 @@ class AgentController:
             )
 
         trace_context = trace_context or {}
-        steps_run = trace_context.get("steps_run", [])
+        governance_context = governance_context or {}
+
         llm_attempted = trace_context.get("llm_attempted", False)
+
+        hard_stop = governance_context.get("hard_stop", False)
+        needs_review = governance_context.get("needs_review", False)
+
+        # Governance can forbid any follow-up
+        if hard_stop:
+            return AgentDecision(
+                action=AgentAction.STOP,
+                reason="Governance hard stop enabled; no follow-up allowed",
+                step_index=step_index,
+                requested_by="agent_controller",
+            )
 
         det_result = stage_results.get("deterministic") or {}
         det_status = (det_result.get("status") or "").lower()
 
-        # If deterministic failed and we haven't tried LLM yet, request one follow-up LLM run.
+        # Rule 1 (existing): deterministic failure → try LLM once
         if det_status and det_status != "success" and not llm_attempted:
             return AgentDecision(
                 action=AgentAction.RUN_LLM,
@@ -41,8 +55,16 @@ class AgentController:
                 requested_by="agent_controller",
             )
 
-        # If LLM already happened (or deterministic is fine), stop.
-        # We keep this conservative and bounded.
+        # Rule 2 (new): governance says output is risky → try LLM once (if not already)
+        if needs_review and not llm_attempted:
+            return AgentDecision(
+                action=AgentAction.RUN_LLM,
+                reason="Governance flagged needs_review; request one LLM follow-up for safer assessment",
+                step_index=step_index,
+                requested_by="agent_controller",
+            )
+
+        # Otherwise, stop (bounded + conservative)
         return AgentDecision(
             action=AgentAction.STOP,
             reason="No additional action required",

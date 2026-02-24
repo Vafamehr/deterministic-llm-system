@@ -512,12 +512,11 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             },
         )
 
-        confidence = _apply_governance_to_confidence(governance, confidence)
-
-        trace_context = _summarize_trace_for_agent(trace)
+        confidence = _apply_governance_to_confidence(governance, confidence)        
 
 
         agent = AgentController(max_steps=1)
+        trace_context = _summarize_trace_for_agent(trace)
         decision = agent.decide(
             goal="Produce a safe, governance-aligned assessment",
             step_index=0,
@@ -527,7 +526,12 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
                 "cross_check": _stage_result_to_dict(cc_res),
             },
             trace_context=trace_context,
-        )
+            governance_context={
+            "needs_review": governance.get("needs_review", False),
+            "hard_stop": governance.get("hard_stop", False),
+            "degradation_mode": governance.get("degradation_mode"),
+            },
+            )
 
         trace.add_event(
             step="agent_decision",
@@ -567,6 +571,8 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
     if hasattr(governance.get("degradation_mode"), "value"):
         governance["degradation_mode"] = governance["degradation_mode"].value
 
+      
+
     # governance trace AFTER normalization
     trace.add_event(
         step="governance",
@@ -581,7 +587,10 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     confidence = _apply_governance_to_confidence(governance, confidence)
 
+
+
     agent = AgentController(max_steps=1)
+    trace_context = _summarize_trace_for_agent(trace)  
     decision = agent.decide(
         goal="Produce a safe, governance-aligned assessment",
         step_index=0,
@@ -590,7 +599,13 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             "llm": _stage_result_to_dict(llm_res),
             "cross_check": _stage_result_to_dict(cc_res),
         },
-    )
+        trace_context=trace_context,
+        governance_context={
+        "needs_review": governance.get("needs_review", False),
+        "hard_stop": governance.get("hard_stop", False),
+        "degradation_mode": governance.get("degradation_mode"),
+        },
+        )
 
     trace.add_event(
         step="agent_decision",

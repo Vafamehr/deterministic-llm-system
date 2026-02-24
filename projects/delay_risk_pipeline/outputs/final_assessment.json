@@ -9,17 +9,17 @@
     "deterministic": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.0066999346017837524
+      "latency_ms": 0.01309998333454132
     },
     "llm": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 57980.246799997985
+      "latency_ms": 60852.49639977701
     },
     "cross_check": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.01810002140700817
+      "latency_ms": 0.015900004655122757
     }
   },
   "governance": {
@@ -46,16 +46,16 @@
       {
         "project_id": "A",
         "risk": "LOW",
-        "reason": "Progress is on track with steady staffing."
+        "reason": "stable progress and staffing"
       },
       {
         "project_id": "B",
         "risk": "HIGH",
-        "reason": "Limited data and high staffing volatility raise concerns."
+        "reason": "low weeks observed, high staffing volatility"
       }
     ],
     "next_actions": [
-      "Monitor progress, review staffing plan"
+      "Monitor B's progress and staffing"
     ]
   },
   "inconsistencies": [
@@ -68,9 +68,9 @@
   "confidence": "MEDIUM",
   "consistency_ratio": 0.5,
   "metrics": {
-    "deterministic_ms": 0.011499971151351929,
-    "llm_ms": 57980.260600103065,
-    "total_ms": 57980.484100058675
+    "deterministic_ms": 0.02110004425048828,
+    "llm_ms": 60852.512300014496,
+    "total_ms": 60852.74729994126
   },
   "decision_trace": [
     {
@@ -78,18 +78,18 @@
       "status": "SUCCESS",
       "reason": "Deterministic stage completed",
       "data_snapshot": {
-        "latency_ms": 0.011499971151351929
+        "latency_ms": 0.02110004425048828
       },
-      "timestamp": "2026-02-24T17:25:06.277352"
+      "timestamp": "2026-02-24T22:45:04.231053"
     },
     {
       "step": "llm",
       "status": "SUCCESS",
       "reason": "LLM stage completed",
       "data_snapshot": {
-        "latency_ms": 57980.260600103065
+        "latency_ms": 60852.512300014496
       },
-      "timestamp": "2026-02-24T17:26:04.257781"
+      "timestamp": "2026-02-24T22:46:05.089502"
     },
     {
       "step": "cross_check",
@@ -99,7 +99,7 @@
         "inconsistencies_count": 1,
         "consistency_ratio": 0.5
       },
-      "timestamp": "2026-02-24T17:26:04.257781"
+      "timestamp": "2026-02-24T22:46:05.089502"
     },
     {
       "step": "governance",
@@ -110,26 +110,26 @@
         "hard_stop": false,
         "escalation_reasons": []
       },
-      "timestamp": "2026-02-24T17:26:04.257781"
+      "timestamp": "2026-02-24T22:46:05.089502"
     },
     {
       "step": "agent_decision",
-      "status": "run_llm",
-      "reason": "Deterministic stage did not succeed; request LLM fallback",
+      "status": "stop",
+      "reason": "No additional action required",
       "data_snapshot": {
-        "requested_by": "agent",
+        "requested_by": "agent_controller",
         "step_index": 0,
         "max_steps": 1
       },
-      "timestamp": "2026-02-24T17:26:04.257781"
+      "timestamp": "2026-02-24T22:46:05.089502"
     }
   ],
   "agent": {
     "max_steps": 1,
     "decision": {
-      "action": "run_llm",
-      "reason": "Deterministic stage did not succeed; request LLM fallback",
-      "requested_by": "agent",
+      "action": "stop",
+      "reason": "No additional action required",
+      "requested_by": "agent_controller",
       "step_index": 0
     }
   }
