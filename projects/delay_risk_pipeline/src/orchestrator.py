@@ -20,7 +20,9 @@ from agent_action import AgentAction
 
 from decision_trace import DecisionTrace
 
-trace = DecisionTrace()
+from governance_to_envelope import build_execution_envelope
+
+# trace = DecisionTrace()
 
 
 
@@ -452,6 +454,7 @@ def _run_stages(
     )
 
 
+
 def run_full_assessment(fact_packets: List[str]) -> Dict:
     # === 1) ROUTING + PLAN ===
     routing_input = " ".join(fact_packets[:3])
@@ -478,7 +481,6 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     start_total = time.perf_counter()
 
-
     (
         det_res, llm_res, cc_res,
         inconsistencies, consistency_ratio, confidence,
@@ -494,10 +496,10 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         start_total=start_total,
     )
 
-
-    
+    # === 3) EARLY EXIT PATH (still run governance + agent decision, but do not run follow-up stages) ===
     if early_exit_taken:
         governance = evaluate_failure_policy(det_res, llm_res, cc_res)
+        
         if hasattr(governance.get("degradation_mode"), "value"):
             governance["degradation_mode"] = governance["degradation_mode"].value
 
@@ -512,11 +514,16 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             },
         )
 
-        confidence = _apply_governance_to_confidence(governance, confidence)        
-
+        confidence = _apply_governance_to_confidence(governance, confidence)
 
         agent = AgentController(max_steps=1)
+
         trace_context = _summarize_trace_for_agent(trace)
+        # Force truth from the pipeline state (prevents trace mismatches)
+        trace_context["llm_attempted"] = bool(llm_ran)
+
+        envelope = build_execution_envelope(governance)
+
         decision = agent.decide(
             goal="Produce a safe, governance-aligned assessment",
             step_index=0,
@@ -527,11 +534,12 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             },
             trace_context=trace_context,
             governance_context={
-            "needs_review": governance.get("needs_review", False),
-            "hard_stop": governance.get("hard_stop", False),
-            "degradation_mode": governance.get("degradation_mode"),
+                "needs_review": governance.get("needs_review", False),
+                "hard_stop": governance.get("hard_stop", False),
+                "degradation_mode": governance.get("degradation_mode"),
             },
-            )
+            envelope=envelope,
+        )
 
         trace.add_event(
             step="agent_decision",
@@ -555,25 +563,22 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
             confidence=confidence,
             consistency_ratio=consistency_ratio,
             deterministic_ms=deterministic_ms,
-            llm_ms=None,
+            llm_ms=llm_ms,  # was None in your snippet; keep real value if present
             total_ms=total_ms,
             trace=trace,
             agent=agent,
             decision=decision,
             force_run_llm=False,
             force_run_cross_check=False,
-        )    
-
+        )
 
     # === 4) GOVERNANCE + AGENT CONTROL (policy / decision / follow-up / recheck) ===
     total_ms = (time.perf_counter() - start_total) * 1000
     governance = evaluate_failure_policy(det_res, llm_res, cc_res)
+    # governance["hard_stop"] = True  #TODO: delete after test TEMP TEST LINE
     if hasattr(governance.get("degradation_mode"), "value"):
         governance["degradation_mode"] = governance["degradation_mode"].value
 
-      
-
-    # governance trace AFTER normalization
     trace.add_event(
         step="governance",
         status="review" if governance.get("needs_review") else "pass",
@@ -587,10 +592,14 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     confidence = _apply_governance_to_confidence(governance, confidence)
 
-
-
     agent = AgentController(max_steps=1)
-    trace_context = _summarize_trace_for_agent(trace)  
+
+    trace_context = _summarize_trace_for_agent(trace)
+    # Force truth from the pipeline state (prevents trace mismatches)
+    trace_context["llm_attempted"] = bool(llm_ran)
+
+    envelope = build_execution_envelope(governance)
+
     decision = agent.decide(
         goal="Produce a safe, governance-aligned assessment",
         step_index=0,
@@ -601,11 +610,12 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         },
         trace_context=trace_context,
         governance_context={
-        "needs_review": governance.get("needs_review", False),
-        "hard_stop": governance.get("hard_stop", False),
-        "degradation_mode": governance.get("degradation_mode"),
+            "needs_review": governance.get("needs_review", False),
+            "hard_stop": governance.get("hard_stop", False),
+            "degradation_mode": governance.get("degradation_mode"),
         },
-        )
+        envelope=envelope,
+    )
 
     trace.add_event(
         step="agent_decision",
@@ -690,3 +700,4 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         agent=agent,
         decision=decision,
     )
+
