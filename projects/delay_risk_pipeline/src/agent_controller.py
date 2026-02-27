@@ -5,7 +5,7 @@ from agent_action import AgentAction
 from execution_envelope import ExecutionEnvelope, AllowedAction
 
 class AgentController:
-    def __init__(self, max_steps: int = 1):
+    def __init__(self):
         # self.max_steps = max_steps removed agent don have control on this anymore. Day 33. instead step budget
         pass
 
@@ -18,11 +18,21 @@ class AgentController:
         trace_context: Optional[Dict[str, Any]] = None,
         governance_context: Optional[Dict[str, Any]] = None,
         envelope: Optional[ExecutionEnvelope] = None,
+        delta_context: Optional[Dict[str, Any]] = None,  # Day 
     ) -> AgentDecision:
         
 
         trace_context = trace_context or {}
         governance_context = governance_context or {}
+        delta_context = delta_context or {}
+        if step_index == 1:
+            if "proposed_action" not in delta_context:
+                return AgentDecision(
+                    action=AgentAction.STOP,
+                    reason="step_1_requires_delta_context_for_confirmation",
+                    requested_by="orchestrator_guardrail",
+                    step_index=step_index,
+                )
         # If no envelope provided, allow current behavior (temporary default)
         if envelope is None:
             raise ValueError("ExecutionEnvelope must be provided by the pipeline")

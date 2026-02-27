@@ -21,6 +21,8 @@ from agent_action import AgentAction
 from decision_trace import DecisionTrace
 from governance_to_envelope import build_execution_envelope
 
+from types import MappingProxyType
+
 
 def run_pipeline(fact_packets: List[str]) -> Dict:
     """
@@ -298,8 +300,35 @@ def _run_metered_decision_window(
         envelope=envelope,
     )
 
+    # Day 34 (Chunk 1): bounded, read-only delta derived from decision_0
+
+    delta_context = MappingProxyType({
+        "proposed_action": decision_0.action.value,
+        "reasoning_summary": decision_0.reason,
+        "llm_already_ran": bool(stage_results.get("llm")),
+        "known_constraints": {
+            "allowed_actions": sorted(a.value for a in envelope.allowed_actions),
+            "hard_stop": bool(governance_context.get("hard_stop", False)),
+            "needs_review": bool(governance_context.get("needs_review", False)),
+            "degradation_mode": governance_context.get("degradation_mode"),
+        },
+    })
+
+
     decision_1 = None
     if decision_0.action == AgentAction.RUN_LLM and step_budget > 1:
+        trace.add_event(
+            step="decision_1_confirmation_input",
+            status="ok",
+            reason="delta_context_provided",
+            data_snapshot={
+                "mode": "confirm_delta",
+                "proposed_action": delta_context.get("proposed_action"),
+                "llm_already_ran": delta_context.get("llm_already_ran"),
+                "known_constraints": delta_context.get("known_constraints"),
+                "reasoning_summary_preview": str(delta_context.get("reasoning_summary", ""))[:200],
+            },
+        )
         decision_1 = agent.decide(
             goal=goal,
             step_index=1,
@@ -308,7 +337,18 @@ def _run_metered_decision_window(
             trace_context=trace_context,
             governance_context=governance_context,
             envelope=envelope,
+            delta_context=delta_context,
         )
+        trace.add_event(
+        step="decision_1_confirmation_result",
+        status="ok",
+        reason="confirmation_pass_complete",
+        data_snapshot={
+            "step_0_action": decision_0.action.value,
+            "step_1_action": decision_1.action.value,
+            "step_1_agrees_with_step_0": decision_1.action == decision_0.action,
+        },
+    )
 
     decision = decision_1 or decision_0
 
