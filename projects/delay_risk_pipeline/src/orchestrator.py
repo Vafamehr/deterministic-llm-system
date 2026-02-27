@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, List
+import time
+from typing import Dict, List, Optional
 
 from router.dispatch import choose_branch
 from router.strategy import Strategy
@@ -8,23 +9,17 @@ from router.strategy import Strategy
 from decision_engine import assess_risk_from_packets
 from llm_reasoner import build_prompt, call_llm_with_retry
 from execution_plan import ExecutionPlan
-import time
+
 from stage_result import StageResult
 from stage_status import StageStatus
 
 from failure_policy import evaluate_failure_policy
 
-
 from agent_controller import AgentController
 from agent_action import AgentAction
 
 from decision_trace import DecisionTrace
-
 from governance_to_envelope import build_execution_envelope
-
-# trace = DecisionTrace()
-
-
 
 
 def run_pipeline(fact_packets: List[str]) -> Dict:
@@ -36,29 +31,22 @@ def run_pipeline(fact_packets: List[str]) -> Dict:
 
 
 # ------------------------------------------------------------
-# Internal helpers (keep orchestrator composable)
+# Internal stage runners
 # ------------------------------------------------------------
 
-
-
-# modified to the following version: 
 def _run_deterministic(fact_packets: List[str]) -> StageResult:
     t0 = time.perf_counter()
-
     try:
         result = assess_risk_from_packets(fact_packets)
         latency_ms = (time.perf_counter() - t0) * 1000
-
         return StageResult(
             status=StageStatus.SUCCESS,
             data=result,
             error=None,
             latency_ms=latency_ms,
         )
-
     except Exception as e:
         latency_ms = (time.perf_counter() - t0) * 1000
-
         return StageResult(
             status=StageStatus.FAILED,
             data=None,
@@ -67,53 +55,32 @@ def _run_deterministic(fact_packets: List[str]) -> StageResult:
         )
 
 
-
-
-
-
-##### 
 def _run_llm(fact_packets: List[str]) -> StageResult:
     t0 = time.perf_counter()
-
     try:
         prompt = build_prompt(fact_packets)
         result = call_llm_with_retry(prompt)
         latency_ms = (time.perf_counter() - t0) * 1000
-
         return StageResult(
             status=StageStatus.SUCCESS,
             data=result,
             error=None,
             latency_ms=latency_ms,
         )
-
     except Exception as e:
         latency_ms = (time.perf_counter() - t0) * 1000
-
         return StageResult(
             status=StageStatus.FAILED,
             data=None,
             error=str(e),
             latency_ms=latency_ms,
         )
-
-
-
-### Wrap _cross_check with Failure Boundary + Upstream Gating
 
 
 def _cross_check(det_result: StageResult, llm_result: StageResult) -> StageResult:
     """
     Compare deterministic vs LLM project risks.
-
-    StageResult.data on SUCCESS:
-      {
-        "inconsistencies": List[Dict],
-        "consistency_ratio": float,
-        "confidence": str
-      }
     """
-    # Gate: only cross-check when upstream stages are SUCCESS
     if det_result.status != StageStatus.SUCCESS or llm_result.status != StageStatus.SUCCESS:
         return StageResult(
             status=StageStatus.SKIPPED,
@@ -133,7 +100,6 @@ def _cross_check(det_result: StageResult, llm_result: StageResult) -> StageResul
         }
 
         inconsistencies: List[Dict] = []
-
         for proj in llm_result_data.get("projects", []):
             project_id = proj.get("project_id")
             if not project_id:
@@ -183,40 +149,14 @@ def _cross_check(det_result: StageResult, llm_result: StageResult) -> StageResul
         )
 
 
-
 def _build_execution_plan(strategy: Strategy) -> ExecutionPlan:
     if strategy == Strategy.ANALYTICS:
-        return ExecutionPlan(
-            run_deterministic=True,
-            run_llm=False,
-            run_cross_check=False,
-        )
-
+        return ExecutionPlan(run_deterministic=True, run_llm=False, run_cross_check=False)
     if strategy == Strategy.SUMMARY:
-        return ExecutionPlan(
-            run_deterministic=False,
-            run_llm=True,
-            run_cross_check=False,
-        )
-
+        return ExecutionPlan(run_deterministic=False, run_llm=True, run_cross_check=False)
     if strategy == Strategy.POLICY:
-        return ExecutionPlan(
-            run_deterministic=True,
-            run_llm=True,
-            run_cross_check=True,
-        )
-
-    # GENERAL fallback
-    return ExecutionPlan(
-        run_deterministic=True,
-        run_llm=True,
-        run_cross_check=True,
-    )
-
-
-
-
-
+        return ExecutionPlan(run_deterministic=True, run_llm=True, run_cross_check=True)
+    return ExecutionPlan(run_deterministic=True, run_llm=True, run_cross_check=True)
 
 
 def _stage_result_to_dict(r: StageResult) -> Dict:
@@ -227,10 +167,7 @@ def _stage_result_to_dict(r: StageResult) -> Dict:
     }
 
 
-
-
-def _apply_governance_to_confidence(governance: dict, confidence: str | None) -> str:
-    # If system says "needs review", confidence cannot be HIGH.
+def _apply_governance_to_confidence(governance: dict, confidence: Optional[str]) -> str:
     if governance.get("needs_review") is True:
         if confidence == "HIGH" or confidence is None:
             return "MEDIUM"
@@ -238,14 +175,8 @@ def _apply_governance_to_confidence(governance: dict, confidence: str | None) ->
 
 
 def _summarize_trace_for_agent(trace: DecisionTrace) -> Dict:
-    """
-    Provide a minimal, structured summary of what has already happened.
-    We intentionally avoid passing the full trace to keep decisions bounded.
-    """
-
     events = trace.to_dict()
-
-    summary = {
+    return {
         "steps_run": [e["step"] for e in events],
         "had_early_exit": any(e["step"] == "early_exit" for e in events),
         "llm_attempted": any(e["step"] in ("llm", "followup_llm") for e in events),
@@ -253,7 +184,6 @@ def _summarize_trace_for_agent(trace: DecisionTrace) -> Dict:
         "last_step": events[-1]["step"] if events else None,
     }
 
-    return summary
 
 def _build_output(
     *,
@@ -270,6 +200,7 @@ def _build_output(
     llm_ms,
     total_ms,
     trace,
+    step_budget=None,  # Day 33: orchestrator-owned budget in output contract
     agent=None,
     decision=None,
     force_run_llm=None,
@@ -310,17 +241,107 @@ def _build_output(
 
     if agent is not None and decision is not None:
         out["agent"] = {
-            "max_steps": agent.max_steps,
+            "step_budget": step_budget,
             "decision": {
                 "action": decision.action.value,
                 "reason": decision.reason,
-                "requested_by": decision.requested_by,
-                "step_index": decision.step_index,
+                "requested_by": getattr(decision, "requested_by", None),
+                "step_index": getattr(decision, "step_index", None),
             },
         }
 
     return out
 
+
+# ------------------------------------------------------------
+# Day 33: Metered decision window helper (single source of truth)
+# ------------------------------------------------------------
+
+def _run_metered_decision_window(
+    *,
+    agent: AgentController,
+    step_budget: int,
+    trace: DecisionTrace,
+    trace_context: Dict,
+    envelope,
+    det_res: StageResult,
+    llm_res: StageResult,
+    cc_res: StageResult,
+    governance: Dict,
+) -> Dict:
+    """
+    Day 33: orchestrator schedules Step 0 and optional Step 1.
+    No loops. No recursion. Same inputs, only step_index changes.
+    Returns dict with decision + decision_1 for provenance.
+    """
+    goal = "Produce a safe, governance-aligned assessment"
+
+    stage_results = {
+        "deterministic": _stage_result_to_dict(det_res),
+        "llm": _stage_result_to_dict(llm_res),
+        "cross_check": _stage_result_to_dict(cc_res),
+    }
+
+    governance_context = {
+        "needs_review": governance.get("needs_review", False),
+        "hard_stop": governance.get("hard_stop", False),
+        "degradation_mode": governance.get("degradation_mode"),
+    }
+
+    decision_0 = agent.decide(
+        goal=goal,
+        step_index=0,
+        step_budget=step_budget,
+        stage_results=stage_results,
+        trace_context=trace_context,
+        governance_context=governance_context,
+        envelope=envelope,
+    )
+
+    decision_1 = None
+    if decision_0.action == AgentAction.RUN_LLM and step_budget > 1:
+        decision_1 = agent.decide(
+            goal=goal,
+            step_index=1,
+            step_budget=step_budget,
+            stage_results=stage_results,
+            trace_context=trace_context,
+            governance_context=governance_context,
+            envelope=envelope,
+        )
+
+    decision = decision_1 or decision_0
+
+    trace.add_event(
+        step="metered_reasoning_window",
+        status="ok",
+        reason="orchestrator_scheduled_steps",
+        data_snapshot={
+            "step_budget": step_budget,
+            "ran_step_0": True,
+            "ran_step_1": decision_1 is not None,
+            "final_decision": decision.action.value,
+            "final_from_step": 1 if decision_1 is not None else 0,
+        },
+    )
+
+    trace.add_event(
+        step="agent_decision",
+        status=decision.action.value,
+        reason=decision.reason,
+        data_snapshot={
+            "requested_by": getattr(decision, "requested_by", None),
+            "step_index": getattr(decision, "step_index", None),
+            "step_budget": step_budget,
+        },
+    )
+
+    return {"decision": decision, "decision_1": decision_1}
+
+
+# ------------------------------------------------------------
+# Main orchestrator
+# ------------------------------------------------------------
 
 def _run_stages(
     *,
@@ -335,11 +356,6 @@ def _run_stages(
     """
     Runs deterministic/LLM/cross-check stages based on the ExecutionPlan.
     Handles early-exit and traces stage outcomes.
-    Returns:
-      det_res, llm_res, cc_res,
-      inconsistencies, consistency_ratio, confidence,
-      deterministic_ms, llm_ms, total_ms,
-      llm_ran, early_exit_taken
     """
     inconsistencies = []
     consistency_ratio = None
@@ -358,10 +374,8 @@ def _run_stages(
 
         trace.add_event(
             step="deterministic",
-            status=det_res.status.value if hasattr(det_res.status, "value") else str(det_res.status),
-            reason="Deterministic stage completed"
-            if det_res.status == StageStatus.SUCCESS
-            else "Deterministic stage not successful",
+            status=det_res.status.value,
+            reason="Deterministic stage completed" if det_res.status == StageStatus.SUCCESS else "Deterministic stage not successful",
             data_snapshot={"latency_ms": deterministic_ms},
         )
 
@@ -411,7 +425,7 @@ def _run_stages(
 
         trace.add_event(
             step="llm",
-            status=llm_res.status.value if hasattr(llm_res.status, "value") else str(llm_res.status),
+            status=llm_res.status.value,
             reason="LLM stage completed" if llm_res.status == StageStatus.SUCCESS else "LLM stage not successful",
             data_snapshot={"latency_ms": llm_ms},
         )
@@ -428,7 +442,7 @@ def _run_stages(
 
         trace.add_event(
             step="cross_check",
-            status=cc_res.status.value if hasattr(cc_res.status, "value") else str(cc_res.status),
+            status=cc_res.status.value,
             reason="Cross-check completed" if cc_res.status == StageStatus.SUCCESS else "Cross-check not successful",
             data_snapshot={
                 "inconsistencies_count": len(inconsistencies or []),
@@ -436,7 +450,7 @@ def _run_stages(
             },
         )
 
-    # --- Confidence defaults (same intent as your original) ---
+    # --- Confidence defaults ---
     if confidence is None:
         if plan.run_deterministic and not plan.run_llm:
             confidence = "HIGH"
@@ -454,9 +468,10 @@ def _run_stages(
     )
 
 
-
 def run_full_assessment(fact_packets: List[str]) -> Dict:
-    # === 1) ROUTING + PLAN ===
+    # ============================================================
+    # ## 1) Routing + plan (deterministic entry)
+    # ============================================================
     routing_input = " ".join(fact_packets[:3])
     trace = DecisionTrace()
 
@@ -467,7 +482,9 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     plan = _build_execution_plan(strategy)
 
-    # === 2) INIT STATE (stage defaults + outputs + metrics + timers) ===
+    # ============================================================
+    # ## 2) Init state (stage defaults + timers)
+    # ============================================================
     det_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
     llm_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
     cc_res: StageResult = StageResult(status=StageStatus.SKIPPED, data=None, error=None, latency_ms=0.0)
@@ -475,7 +492,6 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
     inconsistencies = []
     consistency_ratio = None
     confidence = None
-
     deterministic_ms = None
     llm_ms = None
 
@@ -496,93 +512,19 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         start_total=start_total,
     )
 
-    # === 3) EARLY EXIT PATH (still run governance + agent decision, but do not run follow-up stages) ===
-    if early_exit_taken:
-        governance = evaluate_failure_policy(det_res, llm_res, cc_res)
-        
-        if hasattr(governance.get("degradation_mode"), "value"):
-            governance["degradation_mode"] = governance["degradation_mode"].value
+    # ============================================================
+    # ## 3) Governance (always) + metered decision window
+    # ============================================================
+    step_budget = 2  # Day 33: controlled multi-step capacity (leased by orchestrator)
 
-        trace.add_event(
-            step="governance",
-            status="review" if governance.get("needs_review") else "pass",
-            reason="Failure policy evaluated (early-exit)",
-            data_snapshot={
-                "degradation_mode": governance.get("degradation_mode"),
-                "hard_stop": governance.get("hard_stop", False),
-                "escalation_reasons": governance.get("escalation_reasons", []),
-            },
-        )
-
-        confidence = _apply_governance_to_confidence(governance, confidence)
-
-        agent = AgentController(max_steps=1)
-
-        trace_context = _summarize_trace_for_agent(trace)
-        # Force truth from the pipeline state (prevents trace mismatches)
-        trace_context["llm_attempted"] = bool(llm_ran)
-
-        envelope = build_execution_envelope(governance)
-
-        decision = agent.decide(
-            goal="Produce a safe, governance-aligned assessment",
-            step_index=0,
-            stage_results={
-                "deterministic": _stage_result_to_dict(det_res),
-                "llm": _stage_result_to_dict(llm_res),
-                "cross_check": _stage_result_to_dict(cc_res),
-            },
-            trace_context=trace_context,
-            governance_context={
-                "needs_review": governance.get("needs_review", False),
-                "hard_stop": governance.get("hard_stop", False),
-                "degradation_mode": governance.get("degradation_mode"),
-            },
-            envelope=envelope,
-        )
-
-        trace.add_event(
-            step="agent_decision",
-            status=decision.action.value,
-            reason=decision.reason,
-            data_snapshot={
-                "requested_by": decision.requested_by,
-                "step_index": decision.step_index,
-                "max_steps": agent.max_steps,
-            },
-        )
-
-        return _build_output(
-            strategy=strategy,
-            plan=plan,
-            det_res=det_res,
-            llm_res=llm_res,
-            cc_res=cc_res,
-            governance=governance,
-            inconsistencies=[],
-            confidence=confidence,
-            consistency_ratio=consistency_ratio,
-            deterministic_ms=deterministic_ms,
-            llm_ms=llm_ms,  # was None in your snippet; keep real value if present
-            total_ms=total_ms,
-            trace=trace,
-            agent=agent,
-            decision=decision,
-            force_run_llm=False,
-            force_run_cross_check=False,
-        )
-
-    # === 4) GOVERNANCE + AGENT CONTROL (policy / decision / follow-up / recheck) ===
-    total_ms = (time.perf_counter() - start_total) * 1000
     governance = evaluate_failure_policy(det_res, llm_res, cc_res)
-    # governance["hard_stop"] = True  #TODO: delete after test TEMP TEST LINE
     if hasattr(governance.get("degradation_mode"), "value"):
         governance["degradation_mode"] = governance["degradation_mode"].value
 
     trace.add_event(
         step="governance",
         status="review" if governance.get("needs_review") else "pass",
-        reason="Failure policy evaluated",
+        reason="Failure policy evaluated" + (" (early-exit)" if early_exit_taken else ""),
         data_snapshot={
             "degradation_mode": governance.get("degradation_mode"),
             "hard_stop": governance.get("hard_stop", False),
@@ -592,46 +534,32 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
     confidence = _apply_governance_to_confidence(governance, confidence)
 
-    agent = AgentController(max_steps=1)
+    agent = AgentController()
 
     trace_context = _summarize_trace_for_agent(trace)
-    # Force truth from the pipeline state (prevents trace mismatches)
-    trace_context["llm_attempted"] = bool(llm_ran)
+    trace_context["llm_attempted"] = bool(llm_ran)  # force truth from pipeline state
 
     envelope = build_execution_envelope(governance)
 
-    decision = agent.decide(
-        goal="Produce a safe, governance-aligned assessment",
-        step_index=0,
-        stage_results={
-            "deterministic": _stage_result_to_dict(det_res),
-            "llm": _stage_result_to_dict(llm_res),
-            "cross_check": _stage_result_to_dict(cc_res),
-        },
+    window = _run_metered_decision_window(
+        agent=agent,
+        step_budget=step_budget,
+        trace=trace,
         trace_context=trace_context,
-        governance_context={
-            "needs_review": governance.get("needs_review", False),
-            "hard_stop": governance.get("hard_stop", False),
-            "degradation_mode": governance.get("degradation_mode"),
-        },
         envelope=envelope,
+        det_res=det_res,
+        llm_res=llm_res,
+        cc_res=cc_res,
+        governance=governance,
     )
+    decision = window["decision"]
 
-    trace.add_event(
-        step="agent_decision",
-        status=decision.action.value,
-        reason=decision.reason,
-        data_snapshot={
-            "requested_by": decision.requested_by,
-            "step_index": decision.step_index,
-            "max_steps": agent.max_steps,
-        },
-    )
-
+    # ============================================================
+    # ## 4) Follow-up execution (still bounded by governance)
+    # ============================================================
     hard_stop = governance.get("hard_stop", False)
 
-    # Follow-up: agent can request one extra LLM execution
-    if (not hard_stop) and (decision.action == AgentAction.RUN_LLM) and (not llm_ran):
+    if (not early_exit_taken) and (not hard_stop) and (decision.action == AgentAction.RUN_LLM) and (not llm_ran):
         start = time.perf_counter()
         llm_res = _run_llm(fact_packets)
         llm_ms = (time.perf_counter() - start) * 1000
@@ -639,12 +567,11 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
         trace.add_event(
             step="followup_llm",
-            status=llm_res.status.value if hasattr(llm_res.status, "value") else str(llm_res.status),
+            status=llm_res.status.value,
             reason="Agent-triggered follow-up LLM run",
             data_snapshot={"latency_ms": llm_ms},
         )
 
-        # If cross-check is part of the plan, re-run it now that LLM exists
         if plan.run_cross_check:
             cc_res = _cross_check(det_res, llm_res)
 
@@ -656,7 +583,7 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
             trace.add_event(
                 step="followup_cross_check",
-                status=cc_res.status.value if hasattr(cc_res.status, "value") else str(cc_res.status),
+                status=cc_res.status.value,
                 reason="Cross-check re-run after follow-up LLM",
                 data_snapshot={
                     "inconsistencies_count": len(inconsistencies or []),
@@ -664,7 +591,6 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
                 },
             )
 
-        # Re-evaluate governance + confidence after follow-up
         governance = evaluate_failure_policy(det_res, llm_res, cc_res)
         if hasattr(governance.get("degradation_mode"), "value"):
             governance["degradation_mode"] = governance["degradation_mode"].value
@@ -682,7 +608,9 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
 
         confidence = _apply_governance_to_confidence(governance, confidence)
 
-    # === 5) FINAL OUTPUT (single contract) ===
+    # ============================================================
+    # ## 5) Final output (single contract)
+    # ============================================================
     return _build_output(
         strategy=strategy,
         plan=plan,
@@ -697,7 +625,7 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         llm_ms=llm_ms,
         total_ms=total_ms,
         trace=trace,
+        step_budget=step_budget,
         agent=agent,
         decision=decision,
     )
-

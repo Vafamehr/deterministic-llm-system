@@ -6,16 +6,18 @@ from execution_envelope import ExecutionEnvelope, AllowedAction
 
 class AgentController:
     def __init__(self, max_steps: int = 1):
-        self.max_steps = max_steps
+        # self.max_steps = max_steps removed agent don have control on this anymore. Day 33. instead step budget
+        pass
 
     def decide(
         self,
         goal: str,
         step_index: int,
+        step_budget: int,  # NEW: provided by orchestrator
         stage_results: Dict[str, Dict[str, Any]],
-        trace_context: Optional[Dict[str, Any]] = None, # trace aware from day 31
-        governance_context: Optional[Dict[str, Any]] = None,  # Day 32: governance-aware
-        envelope: Optional[ExecutionEnvelope] = None,  # NEW: action boundary
+        trace_context: Optional[Dict[str, Any]] = None,
+        governance_context: Optional[Dict[str, Any]] = None,
+        envelope: Optional[ExecutionEnvelope] = None,
     ) -> AgentDecision:
         
 
@@ -58,8 +60,11 @@ class AgentController:
             )   
           
         # Hard boundary
-        if step_index >= self.max_steps:
-            return _enforce(AgentAction.STOP, "Max step limit reached")
+        if step_index >= step_budget:
+            return AgentDecision(
+                            action=AgentAction.STOP,
+                            reason=f"Step budget exhausted ({step_budget})"
+                            )
 
         llm_attempted = trace_context.get("llm_attempted", False)
         hard_stop = governance_context.get("hard_stop", False)
