@@ -376,6 +376,18 @@ def _run_metered_decision_window(
         },
     )
 
+    # Day 36: Commit Boundary Marker
+    trace.add_event(
+    step="decision_commit_boundary",
+    status="committed",
+    reason="metered_window_closed",
+    data_snapshot={
+        "final_action": decision.action.value,
+        "from_step": 1 if decision_1 is not None else 0,
+        "step_budget": step_budget,
+    },
+)
+
     return {"decision": decision, "decision_1": decision_1}
 
 
