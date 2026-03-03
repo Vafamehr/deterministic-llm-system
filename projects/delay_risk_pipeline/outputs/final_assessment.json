@@ -9,26 +9,23 @@
     "deterministic": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.007000000096013537
+      "latency_ms": 0.006600006599910557
     },
     "llm": {
-      "status": "FAILED",
-      "error": "JSON braces did not close. Model output was truncated or malformed.",
-      "latency_ms": 58216.04690000004
+      "status": "SUCCESS",
+      "error": null,
+      "latency_ms": 46004.49490000028
     },
     "cross_check": {
-      "status": "SKIPPED",
-      "error": "Skipped cross-check because upstream stage failed or was skipped.",
-      "latency_ms": 0.0
+      "status": "SUCCESS",
+      "error": null,
+      "latency_ms": 0.0185999961104244
     }
   },
   "governance": {
-    "needs_review": true,
-    "degradation_mode": "DETERMINISTIC_ONLY",
-    "escalation_reasons": [
-      "LLM_FAILED"
-    ],
-    "hard_stop": true
+    "needs_review": false,
+    "degradation_mode": "NONE",
+    "escalation_reasons": []
   },
   "deterministic_layer": {
     "num_projects": 2,
@@ -43,74 +40,134 @@
       }
     ]
   },
-  "llm_layer": null,
-  "inconsistencies": [],
+  "llm_layer": {
+    "overall_risk": "MEDIUM",
+    "projects": [
+      {
+        "project_id": "A",
+        "risk": "LOW",
+        "reason": "Consistent progress and moderate staffing"
+      },
+      {
+        "project_id": "B",
+        "risk": "HIGH",
+        "reason": "Limited weeks observed and high staffing volatility"
+      }
+    ],
+    "next_actions": [
+      "Monitor project B's staffing trends"
+    ]
+  },
+  "inconsistencies": [
+    {
+      "project_id": "A",
+      "deterministic_risk": "MEDIUM",
+      "llm_risk": "LOW"
+    }
+  ],
   "confidence": "MEDIUM",
-  "consistency_ratio": null,
+  "consistency_ratio": 0.5,
   "metrics": {
-    "deterministic_ms": 0.011899999663000926,
-    "llm_ms": 58216.06960000008,
-    "total_ms": 58216.2444999999
+    "deterministic_ms": 0.011600001016631722,
+    "llm_ms": 46004.50939999428,
+    "total_ms": 46004.63799999852
   },
   "decision_trace": [
+    {
+      "step": "tool_execution",
+      "status": "ok",
+      "reason": "orchestrator_tool_hook",
+      "data_snapshot": {
+        "tool_name": "get_current_time",
+        "success": true,
+        "calls_made": 1,
+        "error": null,
+        "data_preview": {
+          "utc_time": "2026-03-02T15:31:03.701657"
+        }
+      },
+      "timestamp": "2026-03-02T21:31:03.701657"
+    },
     {
       "step": "deterministic",
       "status": "SUCCESS",
       "reason": "Deterministic stage completed",
       "data_snapshot": {
-        "latency_ms": 0.011899999663000926
+        "latency_ms": 0.011600001016631722
       },
-      "timestamp": "2026-02-27T16:27:45.797581"
+      "timestamp": "2026-03-02T21:31:03.701657"
     },
     {
       "step": "llm",
-      "status": "FAILED",
-      "reason": "LLM stage not successful",
+      "status": "SUCCESS",
+      "reason": "LLM stage completed",
       "data_snapshot": {
-        "latency_ms": 58216.06960000008
+        "latency_ms": 46004.50939999428
       },
-      "timestamp": "2026-02-27T16:28:44.011445"
+      "timestamp": "2026-03-02T21:31:49.702983"
     },
     {
       "step": "cross_check",
-      "status": "SKIPPED",
-      "reason": "Cross-check not successful",
+      "status": "SUCCESS",
+      "reason": "Cross-check completed",
       "data_snapshot": {
-        "inconsistencies_count": 0,
-        "consistency_ratio": null
+        "inconsistencies_count": 1,
+        "consistency_ratio": 0.5
       },
-      "timestamp": "2026-02-27T16:28:44.011445"
+      "timestamp": "2026-03-02T21:31:49.702983"
     },
     {
       "step": "governance",
-      "status": "review",
+      "status": "pass",
       "reason": "Failure policy evaluated",
       "data_snapshot": {
-        "degradation_mode": "DETERMINISTIC_ONLY",
-        "hard_stop": true,
-        "escalation_reasons": [
-          "LLM_FAILED"
-        ]
+        "degradation_mode": "NONE",
+        "hard_stop": false,
+        "escalation_reasons": []
       },
-      "timestamp": "2026-02-27T16:28:44.011445"
+      "timestamp": "2026-03-02T21:31:49.702983"
+    },
+    {
+      "step": "metered_reasoning_window",
+      "status": "ok",
+      "reason": "orchestrator_scheduled_steps",
+      "data_snapshot": {
+        "step_budget": 2,
+        "ran_step_0": true,
+        "ran_step_1": false,
+        "final_decision": "stop",
+        "final_from_step": 0
+      },
+      "timestamp": "2026-03-02T21:31:49.702983"
     },
     {
       "step": "agent_decision",
       "status": "stop",
-      "reason": "Governance hard_stop=True",
+      "reason": "No additional action required",
       "data_snapshot": {
         "requested_by": "agent_controller",
         "step_index": 0,
-        "max_steps": 1
+        "step_budget": 2
       },
-      "timestamp": "2026-02-27T16:28:44.011445"
+      "timestamp": "2026-03-02T21:31:49.702983"
+    },
+    {
+      "step": "decision_commit_boundary",
+      "status": "committed",
+      "reason": "metered_window_closed",
+      "data_snapshot": {
+        "final_action": "stop",
+        "from_step": 0,
+        "step_budget": 2
+      },
+      "timestamp": "2026-03-02T21:31:49.702983"
     }
   ],
   "agent": {
-    "max_steps": 1,
+    "step_budget": 2,
     "decision": {
       "action": "stop",
-      "reason": "Governance hard_stop=True",
+      "reason": "No additional action required",
       "requested_by": "agent_controller",
       "step_index": 0
     }

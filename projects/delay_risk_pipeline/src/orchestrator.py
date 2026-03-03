@@ -24,6 +24,11 @@ from governance_to_envelope import build_execution_envelope
 from types import MappingProxyType
 
 
+from tools.contracts import ToolRequest
+from tools.envelope import ToolEnvelope
+from tools.registry import TOOL_REGISTRY
+from tools.runner import ToolRunner
+
 def run_pipeline(fact_packets: List[str]) -> Dict:
     """
     Public entrypoint for the system.
@@ -533,7 +538,36 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         strategy = Strategy.GENERAL
 
     plan = _build_execution_plan(strategy)
+    plan.use_tool = "get_current_time"
 
+
+    # ============================================================
+    # ## 1.5) Optional tool hook (orchestrator-owned, deterministic)
+    # ============================================================
+    # Tools are executed only if the execution plan requests them.
+    # Agent never chooses tools. No loops. Max one tool call.
+
+    tool_result = None
+
+    if plan.use_tool == "get_current_time":
+        runner = ToolRunner(registry=TOOL_REGISTRY)
+        tool_envelope = ToolEnvelope(allowed_tools={"get_current_time"}, max_calls=1)
+
+        req = ToolRequest(tool_name="get_current_time", arguments={})
+        tool_result = runner.run(req, tool_envelope)
+
+        trace.add_event(
+            step="tool_execution",
+            status="ok" if tool_result.success else "error",
+            reason="orchestrator_tool_hook",
+            data_snapshot={
+                "tool_name": req.tool_name,
+                "success": tool_result.success,
+                "calls_made": tool_envelope.calls_made,
+                "error": tool_result.error,
+                "data_preview": (tool_result.data or {}) if tool_result.success else None,
+            },
+        )
     # ============================================================
     # ## 2) Init state (stage defaults + timers)
     # ============================================================
