@@ -1,0 +1,20 @@
+Governance Rules
+
+The system enforces monotonic confirmation.
+Once a downgrade occurs, it cannot be upgraded in the same run.
+
+Hard stop prevents output emission.
+Degradation mode may remove LLM usage.
+Cross-check must validate LLM output when enabled.
+
+ExecutionEnvelope restricts allowed actions:
+- RUN_LLM
+- STOP
+- TOOL_CALL (bounded)
+
+ToolEnvelope restricts:
+- allowed_tools
+- max_calls
+
+Agent decisions are advisory only.
+Final authority belongs to orchestrator.

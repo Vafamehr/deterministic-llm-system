@@ -1,0 +1,21 @@
+Tool System Design
+
+Tools are deterministic side-effect layers.
+Tools must have:
+- ToolSpec
+- ToolRequest
+- ToolResult
+
+Tools are executed by ToolRunner.
+ToolRunner does not allow dynamic tool discovery.
+Tools must be pre-registered.
+
+RAG retrieval is a deterministic retrieval tool.
+It returns:
+- chunks
+- sources
+- metadata
+
+RAG does not allow agent-driven selection.
+Retrieval is orchestrator-owned.
+Tool usage must be trace logged.

@@ -1,0 +1,20 @@
+System Architecture Overview
+
+The system is deterministic-first. The orchestrator owns:
+- planning
+- tool usage
+- reasoning budget
+- final commit boundary
+
+The agent does not control tool selection.
+The agent cannot introduce loops.
+The agent cannot extend its own reasoning steps.
+
+Pipeline:
+Router → Execution Plan → Optional Tool → Deterministic Layer → Optional RAG →
+LLM → Cross Check → Governance → ExecutionEnvelope →
+Metered Decision Window → Commit Boundary → Output
+
+All tool usage must be envelope restricted.
+Every tool call is trace logged.
+Commit boundary prevents post-approval mutation.

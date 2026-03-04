@@ -220,3 +220,20 @@ You succeed if you can say:
 Not:
 
 “I tried some prompts.”
+
+
+
+You don’t just want diagrams.
+You want a structured review system that:
+
+Reinforces learning
+
+Organizes your thinking top → bottom
+
+Prepares you for interviews (without Q&A format)
+
+Produces GitHub-ready artifacts
+
+Stays inside the same repo (no chaos)
+
+That’s doable — but we need a clean structure.
