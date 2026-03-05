@@ -9,17 +9,17 @@
     "deterministic": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.006600006599910557
+      "latency_ms": 0.010199961252510548
     },
     "llm": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 46004.49490000028
+      "latency_ms": 71463.53419998195
     },
     "cross_check": {
       "status": "SUCCESS",
       "error": null,
-      "latency_ms": 0.0185999961104244
+      "latency_ms": 0.026800029445439577
     }
   },
   "governance": {
@@ -28,7 +28,7 @@
     "escalation_reasons": []
   },
   "deterministic_layer": {
-    "num_projects": 2,
+    "num_projects": 4,
     "assessments": [
       {
         "fact_packet": "Project: A\nProgress: 1.00\nWeeks observed: 3\nAvg staffing: 10.00\nStaffing volatility (3w std avg): 0.57",
@@ -37,6 +37,14 @@
       {
         "fact_packet": "Project: B\nProgress: 1.00\nWeeks observed: 2\nAvg staffing: 6.00\nStaffing volatility (3w std avg): 0.71",
         "risk_level": "HIGH"
+      },
+      {
+        "fact_packet": "RAG_CHUNK id=governance_rules source=data\\rag\\default\\governance_rules.txt score=1.0: Governance Rules\n\nThe system enforces monotonic confirmation.\nOnce a downgrade occurs, it cannot be upgraded in the same run.\n\nHard stop prevents output emission.\nDegradation mode may remove LLM usage.\nCross-check must validate LLM output when enabled.\n\nExecutionEnvelope restricts allowed actions:\n- RUN_LLM\n- STOP\n- TOOL_CALL (bounded)\n\nToolEnvelope restricts:\n- allowed_tools\n- max_calls\n\nAgent decisions are advisory only.\nFinal authority belongs to orchestrator.",
+        "risk_level": "LOW"
+      },
+      {
+        "fact_packet": "RAG_CHUNK id=tool_system source=data\\rag\\default\\tool_system.txt score=1.0: Tool System Design\n\nTools are deterministic side-effect layers.\nTools must have:\n- ToolSpec\n- ToolRequest\n- ToolResult\n\nTools are executed by ToolRunner.\nToolRunner does not allow dynamic tool discovery.\nTools must be pre-registered.\n\nRAG retrieval is a deterministic retrieval tool.\nIt returns:\n- chunks\n- sources\n- metadata\n\nRAG does not allow agent-driven selection.\nRetrieval is orchestrator-owned.\nTool usage must be trace logged.",
+        "risk_level": "LOW"
       }
     ]
   },
@@ -45,32 +53,26 @@
     "projects": [
       {
         "project_id": "A",
-        "risk": "LOW",
-        "reason": "Consistent progress and moderate staffing"
+        "risk": "MEDIUM",
+        "reason": "Moderate progress and staffing volatility"
       },
       {
         "project_id": "B",
         "risk": "HIGH",
-        "reason": "Limited weeks observed and high staffing volatility"
+        "reason": "Low progress and high staffing volatility"
       }
     ],
     "next_actions": [
-      "Monitor project B's staffing trends"
+      "Review project A's progress and adjust staffing as needed"
     ]
   },
-  "inconsistencies": [
-    {
-      "project_id": "A",
-      "deterministic_risk": "MEDIUM",
-      "llm_risk": "LOW"
-    }
-  ],
-  "confidence": "MEDIUM",
-  "consistency_ratio": 0.5,
+  "inconsistencies": [],
+  "confidence": "HIGH",
+  "consistency_ratio": 1.0,
   "metrics": {
-    "deterministic_ms": 0.011600001016631722,
-    "llm_ms": 46004.50939999428,
-    "total_ms": 46004.63799999852
+    "deterministic_ms": 0.015900004655122757,
+    "llm_ms": 71463.54990004329,
+    "total_ms": 71463.75390002504
   },
   "decision_trace": [
     {
@@ -78,43 +80,45 @@
       "status": "ok",
       "reason": "orchestrator_tool_hook",
       "data_snapshot": {
-        "tool_name": "get_current_time",
+        "tool_name": "rag.retrieve",
         "success": true,
         "calls_made": 1,
         "error": null,
-        "data_preview": {
-          "utc_time": "2026-03-02T15:31:03.701657"
-        }
+        "num_chunks": 2,
+        "chunk_ids": [
+          "governance_rules",
+          "tool_system"
+        ]
       },
-      "timestamp": "2026-03-02T21:31:03.701657"
+      "timestamp": "2026-03-04T20:04:56.494034"
     },
     {
       "step": "deterministic",
       "status": "SUCCESS",
       "reason": "Deterministic stage completed",
       "data_snapshot": {
-        "latency_ms": 0.011600001016631722
+        "latency_ms": 0.015900004655122757
       },
-      "timestamp": "2026-03-02T21:31:03.701657"
+      "timestamp": "2026-03-04T20:04:56.494034"
     },
     {
       "step": "llm",
       "status": "SUCCESS",
       "reason": "LLM stage completed",
       "data_snapshot": {
-        "latency_ms": 46004.50939999428
+        "latency_ms": 71463.54990004329
       },
-      "timestamp": "2026-03-02T21:31:49.702983"
+      "timestamp": "2026-03-04T20:06:07.954677"
     },
     {
       "step": "cross_check",
       "status": "SUCCESS",
       "reason": "Cross-check completed",
       "data_snapshot": {
-        "inconsistencies_count": 1,
-        "consistency_ratio": 0.5
+        "inconsistencies_count": 0,
+        "consistency_ratio": 1.0
       },
-      "timestamp": "2026-03-02T21:31:49.702983"
+      "timestamp": "2026-03-04T20:06:07.954677"
     },
     {
       "step": "governance",
@@ -125,7 +129,7 @@
         "hard_stop": false,
         "escalation_reasons": []
       },
-      "timestamp": "2026-03-02T21:31:49.702983"
+      "timestamp": "2026-03-04T20:06:07.954677"
     },
     {
       "step": "metered_reasoning_window",
@@ -138,7 +142,7 @@
         "final_decision": "stop",
         "final_from_step": 0
       },
-      "timestamp": "2026-03-02T21:31:49.702983"
+      "timestamp": "2026-03-04T20:06:07.954677"
     },
     {
       "step": "agent_decision",
@@ -149,7 +153,7 @@
         "step_index": 0,
         "step_budget": 2
       },
-      "timestamp": "2026-03-02T21:31:49.702983"
+      "timestamp": "2026-03-04T20:06:07.954677"
     },
     {
       "step": "decision_commit_boundary",
@@ -160,7 +164,7 @@
         "from_step": 0,
         "step_budget": 2
       },
-      "timestamp": "2026-03-02T21:31:49.702983"
+      "timestamp": "2026-03-04T20:06:07.954677"
     }
   ],
   "agent": {

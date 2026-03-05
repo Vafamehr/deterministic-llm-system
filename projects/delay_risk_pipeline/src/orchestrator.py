@@ -29,6 +29,11 @@ from tools.envelope import ToolEnvelope
 from tools.registry import TOOL_REGISTRY
 from tools.runner import ToolRunner
 
+from tools.contracts import ToolRequest
+from tools.registry import TOOL_REGISTRY
+from tools.runner import ToolRunner
+from tools.envelope import ToolEnvelope
+
 def run_pipeline(fact_packets: List[str]) -> Dict:
     """
     Public entrypoint for the system.
@@ -538,36 +543,95 @@ def run_full_assessment(fact_packets: List[str]) -> Dict:
         strategy = Strategy.GENERAL
 
     plan = _build_execution_plan(strategy)
-    plan.use_tool = "get_current_time"
+    #plan.use_tool = "get_current_time"
+    plan.use_tool = "rag.retrieve"
 
 
-    # ============================================================
+   # ============================================================
     # ## 1.5) Optional tool hook (orchestrator-owned, deterministic)
     # ============================================================
     # Tools are executed only if the execution plan requests them.
     # Agent never chooses tools. No loops. Max one tool call.
 
     tool_result = None
+    retrieval_chunks = []
+
+    runner = ToolRunner(registry=TOOL_REGISTRY)
 
     if plan.use_tool == "get_current_time":
-        runner = ToolRunner(registry=TOOL_REGISTRY)
         tool_envelope = ToolEnvelope(allowed_tools={"get_current_time"}, max_calls=1)
-
         req = ToolRequest(tool_name="get_current_time", arguments={})
         tool_result = runner.run(req, tool_envelope)
 
         trace.add_event(
-            step="tool_execution",
+            step=f"tool:{req.tool_name}",
             status="ok" if tool_result.success else "error",
-            reason="orchestrator_tool_hook",
+            reason="orchestrator_owned_tool_call",
             data_snapshot={
                 "tool_name": req.tool_name,
+                "args_preview": req.arguments,
                 "success": tool_result.success,
                 "calls_made": tool_envelope.calls_made,
                 "error": tool_result.error,
-                "data_preview": (tool_result.data or {}) if tool_result.success else None,
+                "result_preview": (tool_result.data or {}) if tool_result.success else None,
+            },
+        )   
+
+    elif plan.use_tool == "rag.retrieve":
+        tool_envelope = ToolEnvelope(allowed_tools={"rag.retrieve"}, max_calls=1)
+
+        # Build a deterministic retrieval query from the input packets.
+        query_text = " ".join(fact_packets[:3]) if fact_packets else ""
+
+        req = ToolRequest(
+            tool_name="rag.retrieve",
+            arguments={
+                "query": query_text,
+                "top_k": 5,
+                "namespace": "default",
             },
         )
+        tool_result = runner.run(req, tool_envelope)
+
+        # Capture retrieved chunks for injection
+        if tool_result.success:
+            retrieval_chunks = (tool_result.data or {}).get("chunks", [])
+
+        trace.add_event(
+            step=f"tool:{req.tool_name}",
+            status="ok" if tool_result.success else "error",
+            reason="orchestrator_owned_tool_call",
+            data_snapshot={
+                "tool_name": req.tool_name,
+                "args_preview": req.arguments,
+                "success": tool_result.success,
+                "calls_made": tool_envelope.calls_made,
+                "error": tool_result.error,
+                "result_preview": (tool_result.data or {}) if tool_result.success else None,
+            },
+        )
+
+    # If retrieval ran, inject retrieved chunks as additional fact packets (bounded)
+    if retrieval_chunks:
+        rag_packets = []
+        for c in retrieval_chunks:
+            text = (c.get("text") or "").strip()
+            if not text:
+                continue
+            rag_packets.append(
+                f"RAG_CHUNK id={c.get('chunk_id')} source={c.get('source')} score={c.get('score')}: {text[:800]}"
+            )
+
+        # Extend fact_packets deterministically (no loops, bounded by top_k)
+        fact_packets = list(fact_packets) + rag_packets
+
+
+
+
+
+
+
+
     # ============================================================
     # ## 2) Init state (stage defaults + timers)
     # ============================================================

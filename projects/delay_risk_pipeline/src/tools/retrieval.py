@@ -3,6 +3,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass,field
 from typing import Any, Dict, List, Optional
+from .contracts import ToolSpec, ToolRequest, ToolResult
+
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -69,9 +74,7 @@ def retrieval_tool_output(result: RetrievalResult) -> Dict[str, Any]:
 
 ###################################################
 
-import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -190,7 +193,7 @@ def execute_retrieval(query: RetrievalQuery) -> RetrievalResult:
 # Tool wrapper (Chunk 4)
 # =========================
 
-from contracts import ToolSpec, ToolRequest, ToolResult
+
 
 TOOL_NAME = "rag.retrieve"
 
@@ -216,8 +219,18 @@ def _run_retrieval_tool(request: ToolRequest) -> ToolResult:
         )
 
 
-RETRIEVAL_TOOL = ToolSpec(
-    name=TOOL_NAME,
-    description="Deterministic retrieval over data/rag/<namespace>/*.txt (orchestrator-owned).",
-    runner=_run_retrieval_tool,
-)
+
+
+
+def rag_retrieve(query: str, top_k: int = 5, namespace: Optional[str] = None) -> Dict[str, Any]:
+    """
+    ToolRunner-compatible retrieval tool.
+
+    Called as: rag_retrieve(**ToolRequest.arguments)
+    Must return a plain dict (ToolRunner wraps it into ToolResult).
+    """
+    rq = retrieval_tool_input(
+        {"query": query, "top_k": top_k, "namespace": namespace}
+    )
+    rr = execute_retrieval(rq)
+    return retrieval_tool_output(rr)

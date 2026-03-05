@@ -10,11 +10,16 @@ and writes artifacts to outputs/
 """
 
 from __future__ import annotations
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 import json
 from pathlib import Path
 
 import pandas as pd
+from datetime import datetime
+from pathlib import Path
 
 from delay_risk.validation.validate import (
     ValidationRules,
@@ -99,9 +104,21 @@ def main() -> None:
     fact_packets = load_fact_packets(packet_file)
     assessment = run_pipeline(fact_packets)
 
-    final_file = OUTPUT_DIR / "final_assessment.json"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    final_file = OUTPUT_DIR / f"final_assessment_{timestamp}.json"
+
+    # Save historical run artifact
     write_json(final_file, assessment)
     print(f"Final assessment written to {final_file}")
+
+    # Save latest example snapshot for GitHub / demos
+    RUNS_DIR = Path("runs")
+    RUNS_DIR.mkdir(exist_ok=True)
+
+    example_run = RUNS_DIR / "example_run.json"
+    write_json(example_run, assessment)
+
+    print(f"Example run artifact written to {example_run}")
 
     print("Pipeline complete.")
 
