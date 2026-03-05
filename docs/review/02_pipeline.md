@@ -1,5 +1,11 @@
 # Request Execution Pipeline
 
+This section describes how a user request flows through the system from intake to final output.
+
+See diagram:
+
+[Request Execution Pipeline](./diagrams/pipeline.md)
+
 The system processes every request through a **deterministic-first execution pipeline** controlled by the orchestrator.
 
 The goal is to **use reliable logic first**, then expand capability only when necessary.

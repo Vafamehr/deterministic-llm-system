@@ -1,5 +1,11 @@
 # Orchestrator
 
+This section explains how the orchestrator controls system execution and routes requests across deterministic logic, capabilities, and reasoning layers.
+
+See diagram:
+
+[Orchestrator Control Flow](./diagrams/orchestrator_control.md)
+
 The **Orchestrator** is the control center of the system.
 
 It manages execution flow and ensures that the system follows a **deterministic-first policy**.

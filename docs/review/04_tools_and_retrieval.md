@@ -1,5 +1,11 @@
 # Tools and Retrieval
 
+This section explains how the system expands its capabilities through tool execution and retrieval without relying directly on the LLM.
+
+See diagram:
+
+[Tools and Retrieval Capability Flow](./diagrams/tools_and_retrieval.md)
+
 Tools and retrieval provide **capability expansion** for the system.  
 They allow the system to access external actions or knowledge **without relying directly on the LLM**.
 

@@ -1,4 +1,10 @@
-# Architecture Big Picture
+# Architecture Overview
+
+This section explains the major components of the system and how responsibilities are separated across layers.
+
+See diagram:
+
+[LLM System Architecture Overview](./diagrams/architecture_big_picture.md)
 
 This system follows a **layered architecture** designed to keep LLM reasoning controlled and observable.
 

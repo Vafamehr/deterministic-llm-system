@@ -1,5 +1,11 @@
 # Agent Control
 
+This section explains how agent reasoning is bounded and controlled so that the system remains predictable and safe.
+
+See diagram:
+
+[Bounded Agent Control](./diagrams/agent_control.md)
+
 The system includes an **agent reasoning capability**, but it is intentionally **bounded and controlled**.
 
 The goal is to allow flexible reasoning while preventing the agent from taking uncontrolled actions in the system.

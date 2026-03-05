@@ -1,4 +1,10 @@
-## System Story (Hybrid: GitHub + Interview)
+# System Story
+
+This section introduces the high-level idea behind the deterministic-first LLM system.
+
+See diagram:
+
+[Deterministic-First LLM System Overview](./diagrams/system_story.md)
 
 This repository implements a **deterministic-first LLM system**. The core idea is simple: **solve with reliable logic first**, then use an LLM only as a **secondary** layer when deterministic methods cannot complete the job.
 
