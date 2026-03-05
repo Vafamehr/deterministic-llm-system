@@ -12,3 +12,4 @@ venv/
 Thumbs.db
 llm_env/
 .vscode/
+private_notes/
