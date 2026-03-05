@@ -1,35 +1,31 @@
 # Deterministic-First LLM System Overview
 
-  ```mermaid
+```mermaid
 flowchart TD
 
 U[User Request] --> O[Orchestrator]
 
-O --> D[Deterministic Layer: rules validation logic]
+O --> D[Deterministic Layer]
 
-D -->|Resolved| C[Candidate Answer]
+D -->|Resolved| C[Candidate Result]
 
-D -->|Unresolved| CAP{Missing capability}
+D -->|Unresolved| CAP{Missing Capability}
 
-CAP -->|Need tool| T[Tool Execution: registry and envelope]
-
-CAP -->|Need context| RAG[Retrieval: bounded query]
-
-CAP -->|Neither or ambiguous| LQ{Allow LLM}
+CAP -->|Need Tool| T[Tool Runner]
+CAP -->|Need Context| RAG[Retrieval System]
+CAP -->|Still Unresolved| LQ{Allow LLM Reasoning}
 
 T --> D
 RAG --> D
 
-D -->|Still unresolved| LQ
+D -->|Still Unresolved| LQ
 
-LQ -->|Yes| L[LLM Reasoning Secondary Layer]
-
+LQ -->|Yes| L[LLM or Agent Reasoning]
 LQ -->|No| C
 
 L --> C
 
-C --> G[Governance Gate: risk and ambiguity check]
-
+C --> G[Governance Gate]
 G --> OUT[Final Output]
 
 O -.-> TR[Trace Artifacts]
@@ -38,4 +34,3 @@ T -.-> TR
 RAG -.-> TR
 L -.-> TR
 G -.-> TR
-  ```

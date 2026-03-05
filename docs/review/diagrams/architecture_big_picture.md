@@ -4,49 +4,48 @@
 
 flowchart TD
 
-User[User Request]
+User[User Request] --> O[Orchestrator]
 
-subgraph Control Layer
-O[Orchestrator]
-end
-
-subgraph Deterministic Layer
-D[Rules Validation Known Logic]
+subgraph Core Execution
+D[Deterministic Layer]
 end
 
 subgraph Capability Layer
-T[Tool Execution]
-RAG[Retrieval System]
+TR[Tool Runner]
+RET[Retrieval System]
+end
+
+subgraph Reasoning Layer
+A[Agent Reasoning Optional]
 LLM[LLM Reasoning Optional]
 end
 
-subgraph Safety Layer
-G[Governance Checks]
+subgraph Safety and Observability
+G[Governance Gate]
+T[Trace Artifacts]
 end
 
-subgraph Observability
-TR[Trace Artifacts]
-end
-
-User --> O
 O --> D
 
-D -->|Need capability| T
-D -->|Need context| RAG
-D -->|Still unresolved| LLM
+D -->|Need tool| TR
+D -->|Need context| RET
+D -->|Need bounded decision| A
+D -->|Need freeform reasoning| LLM
 
-T --> D
-RAG --> D
+TR --> D
+RET --> D
+A --> D
 LLM --> D
 
-D --> G
-G --> Output[Final Output]
+D --> C[Candidate Result]
+C --> G --> OUT[Final Output]
 
-O -.-> TR
-D -.-> TR
-T -.-> TR
-RAG -.-> TR
-LLM -.-> TR
-G -.-> TR
+O -.-> T
+D -.-> T
+TR -.-> T
+RET -.-> T
+A -.-> T
+LLM -.-> T
+G -.-> T
 
 ```

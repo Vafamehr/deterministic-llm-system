@@ -1,5 +1,6 @@
 # Orchestrator Control Flow
- ```mermaid
+
+```mermaid
 flowchart TD
 
 REQ[User Request] --> O[Orchestrator]
@@ -12,12 +13,12 @@ DET -->|Resolved| RESULT[Candidate Result]
 
 DET -->|Needs Tool| TOOL[Tool Runner]
 DET -->|Needs Retrieval| RET[Retrieval System]
-DET -->|Still unresolved| LLMQ{Allow LLM}
+DET -->|Still Unresolved| LLMQ{Allow LLM Reasoning}
 
 TOOL --> DET
 RET --> DET
 
-LLMQ -->|Yes| LLM[LLM Reasoning]
+LLMQ -->|Yes| LLM[LLM or Agent Reasoning]
 LLMQ -->|No| RESULT
 
 LLM --> RESULT
@@ -31,5 +32,3 @@ TOOL -.-> TRACE
 RET -.-> TRACE
 LLM -.-> TRACE
 GOV -.-> TRACE
-
- ```
