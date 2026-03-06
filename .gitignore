@@ -10,6 +10,12 @@ venv/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Local environments
 llm_env/
 .vscode/
+
+# Private / local work
 private_notes/
+dev_warmups/
+experiments/
