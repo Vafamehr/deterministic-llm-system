@@ -3,16 +3,16 @@
 ```mermaid
 flowchart TD
 
-O[Orchestrator] --> DW[Agent Decision Window]
+O[Orchestrator] --> DW{Agent Decision Window}
 
-DW -->|Allow Reasoning| A[Agent Reasoning]
+DW -->|Reasoning Allowed| A[Agent Reasoning]
 
 A --> DEC[Structured Decision]
 
-DEC --> DET[Deterministic Stage]
+DEC --> D[Deterministic Layer]
 
-DET --> RES[Candidate Result]
+D --> RES[Candidate Result]
 
-O -.-> TRACE[Trace Artifacts]
-A -.-> TRACE
-DET -.-> TRACE
+O -.-> T[Trace Artifacts]
+A -.-> T
+D -.-> T

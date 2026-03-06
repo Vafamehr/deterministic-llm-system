@@ -1,28 +1,30 @@
-
 # LLM System Architecture Overview
-  
-  ```mermaid
 
+```mermaid
 flowchart TD
 
-User[User Request] --> O[Orchestrator]
+U[User Request] --> O[Orchestrator]
 
-subgraph Core Execution
-D[Deterministic Layer]
+subgraph L1[Control Layer]
+O
 end
 
-subgraph Capability Layer
+subgraph L2[Deterministic Layer]
+D[Deterministic Execution]
+end
+
+subgraph L3[Capability Layer]
 TR[Tool Runner]
 RET[Retrieval System]
+AR[Bounded Agent Step]
+LLM[LLM Reasoning]
 end
 
-subgraph Reasoning Layer
-A[Agent Reasoning Optional]
-LLM[LLM Reasoning Optional]
-end
-
-subgraph Safety and Observability
+subgraph L4[Safety Layer]
 G[Governance Gate]
+end
+
+subgraph L5[Observability Layer]
 T[Trace Artifacts]
 end
 
@@ -30,23 +32,22 @@ O --> D
 
 D -->|Need tool| TR
 D -->|Need context| RET
-D -->|Need bounded decision| A
-D -->|Need freeform reasoning| LLM
+D -->|Need bounded decision| AR
+D -->|Need model reasoning| LLM
 
 TR --> D
 RET --> D
-A --> D
+AR --> D
 LLM --> D
 
 D --> C[Candidate Result]
-C --> G --> OUT[Final Output]
+C --> G
+G --> OUT[Final Output]
 
 O -.-> T
 D -.-> T
 TR -.-> T
 RET -.-> T
-A -.-> T
+AR -.-> T
 LLM -.-> T
 G -.-> T
-
-```

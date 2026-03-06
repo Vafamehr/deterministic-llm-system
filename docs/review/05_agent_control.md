@@ -8,29 +8,35 @@ See diagram:
 
 The system includes an **agent reasoning capability**, but it is intentionally **bounded and controlled**.
 
-The goal is to allow flexible reasoning while preventing the agent from taking uncontrolled actions in the system.
+The goal is to allow flexible reasoning when necessary while ensuring that the agent cannot take uncontrolled actions within the system.
 
 ---
 
 ## Decision Window
 
-The orchestrator defines a **decision window** that determines when the agent is allowed to reason.
+The orchestrator defines a **decision window** that determines when agent reasoning is permitted.
 
-This means the agent is only invoked **after deterministic logic, tools, and retrieval have already been attempted**.
+The agent is only invoked **after deterministic logic, tools, and retrieval have already been attempted**.
 
-The orchestrator remains the primary controller of the system.
+This ensures that the system always prioritizes structured and predictable mechanisms before allowing model-driven reasoning.
+
+The orchestrator remains the **primary controller of execution**.
 
 ---
 
 ## Controlled Reasoning
 
-When reasoning is allowed, the agent analyzes the current system state and produces a **structured decision**.
+When the decision window opens, the agent analyzes the current system state and produces a **structured decision or recommendation**.
 
-The agent does not execute system operations directly.
+The agent does **not execute system operations directly**.
 
-Instead, its reasoning feeds back into the deterministic layer where the system continues the pipeline.
+Instead, the agent’s output is fed back into the **deterministic layer**, where the system continues execution using standard pipeline rules.
 
-This ensures that the system remains predictable and that all actions still pass through deterministic execution paths.
+This design ensures that:
+
+- all actions still pass through deterministic execution paths
+- the orchestrator maintains full control of system flow
+- reasoning remains observable and traceable
 
 ---
 
@@ -39,11 +45,15 @@ This ensures that the system remains predictable and that all actions still pass
 Bounding the agent prevents several common issues in LLM-based systems:
 
 - uncontrolled tool loops
-- unpredictable system behavior
+- unpredictable execution paths
 - difficult debugging
-- hidden reasoning paths
+- hidden or opaque reasoning chains
 
-By keeping the agent within a defined execution boundary, the system remains **stable, observable, and easier to reason about**.
+By restricting the agent to a defined execution boundary, the system remains:
+
+- stable
+- observable
+- easier to reason about and maintain
 
 ---
 

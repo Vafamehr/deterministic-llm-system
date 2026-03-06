@@ -7,46 +7,57 @@ See diagram:
 [Tools and Retrieval Capability Flow](./diagrams/tools_and_retrieval.md)
 
 Tools and retrieval provide **capability expansion** for the system.  
-They allow the system to access external actions or knowledge **without relying directly on the LLM**.
+They allow the system to access external actions or knowledge while still maintaining the **deterministic-first execution model**.
 
-In the deterministic-first architecture, the **orchestrator decides when these capabilities are used**.
+In this architecture, the **orchestrator decides when these capabilities are invoked**.  
+Tools and retrieval are therefore controlled extensions of deterministic logic rather than autonomous components.
 
 ---
 
 ## Tool Execution
 
-Tools represent structured operations the system can perform when deterministic logic needs external capability.
+Tools represent structured operations that the system can perform when deterministic logic requires external capability.
 
 Examples include:
+
 - calling external services
 - performing specialized computations
 - accessing structured data sources
+- retrieving information from APIs or databases
 
-Tools are executed through a **Tool Runner** that references a **Tool Registry**.
+Tools are executed through a **Tool Runner**, which interacts with a **Tool Registry**.
 
 The registry defines:
+
 - available tools
 - expected input schema
 - returned output structure
 
-Each tool call is executed through a **Tool Envelope**, which ensures the request and response remain structured and traceable.
+Each tool invocation is executed using a **Tool Envelope**, which ensures that the request and response remain structured and traceable.
 
-This keeps tool execution **predictable, auditable, and safe**.
+This design makes tool execution:
+
+- predictable
+- auditable
+- safe
+- easy to integrate into deterministic reasoning
 
 ---
 
 ## Retrieval
 
-Retrieval provides **contextual knowledge** when the system needs additional information.
+Retrieval provides **contextual knowledge** when the system needs additional information to resolve a request.
 
 The retrieval interface receives a query and returns **context chunks** from a knowledge index.
 
 These chunks may include:
+
 - documentation
 - stored knowledge
 - project-specific information
+- reference materials
 
-The retrieved context is returned to the deterministic layer so the system can attempt resolution again.
+The retrieved context is returned to the deterministic layer, allowing the system to attempt resolution again using the newly available information.
 
 ---
 
@@ -54,9 +65,11 @@ The retrieved context is returned to the deterministic layer so the system can a
 
 Both **tool results** and **retrieved context** are fed back into the deterministic stage.
 
-The system attempts to resolve the request again using the new information.
+The system then attempts to resolve the request again using the structured outputs returned by these capabilities.
 
-Only if the request is still unresolved does the system allow **LLM reasoning as a secondary capability**.
+Only if the request remains unresolved does the system allow **LLM reasoning as a secondary capability**.
+
+This ensures that structured and deterministic mechanisms are always attempted before invoking the language model.
 
 ---
 

@@ -8,47 +8,59 @@ See diagram:
 
 This system is designed to be **controlled and observable**, not just “smart.”
 
-Two components make that real:
+Two components make that possible:
 
-- **Governance**: a final gate that evaluates whether the candidate result is safe, complete, and acceptable.
-- **Trace artifacts**: structured logs of what happened at each stage so the system is debuggable and explainable.
+- **Governance** – a final evaluation gate that determines whether a candidate result should be returned to the user.
+- **Trace artifacts** – structured execution records that capture what occurred at each stage of the pipeline.
+
+Together, these mechanisms ensure that the system remains **safe, debuggable, and explainable**.
 
 ---
 
 ## Governance
 
-Governance is the system’s **quality and risk gate**.
+Governance acts as the system’s **quality and risk gate**.
+
+After the pipeline produces a candidate result, governance evaluates whether the result meets the system’s safety and reliability expectations.
 
 A candidate result may be flagged for review when it is:
+
 - ambiguous or under-specified
-- missing evidence or support
+- missing evidence or supporting context
 - inconsistent with deterministic signals
-- produced under degraded conditions (tool failure, weak retrieval, etc.)
+- produced under degraded conditions (for example tool failure or weak retrieval results)
 
-Governance does not need to “rewrite” the answer. Its job is to decide:
-- **approved** (safe to return)
-- **needs review** (return with caution or request clarification depending on your rules)
+Governance does not necessarily modify the answer. Its primary role is to determine the outcome:
 
-This prevents the system from returning confident outputs when upstream signals are weak.
+- **Approved** – safe to return to the user  
+- **Needs Review** – returned with caution or requires clarification depending on system rules
+
+This step prevents the system from returning confident outputs when upstream signals are weak.
 
 ---
 
 ## Trace Artifacts
 
-Trace artifacts provide **end-to-end observability**.
+Trace artifacts provide **end-to-end observability** across the entire execution pipeline.
 
-Each stage emits structured trace data such as:
-- which path the orchestrator chose
-- deterministic outcome and why
-- tool/retrieval calls (inputs, outputs, status)
-- whether LLM/agent reasoning was triggered
-- governance decision and escalation reasons
-- latency or timing metadata (if tracked)
+Each stage emits structured trace data describing what occurred during execution.
 
-Traces make the system:
-- debuggable (you can pinpoint failures)
-- explainable (you can narrate the pipeline in interviews)
-- auditable (you can justify why an answer was produced)
+Typical trace data may include:
+
+- which execution path the orchestrator selected
+- deterministic stage outcomes
+- tool or retrieval calls (inputs, outputs, and status)
+- whether LLM or agent reasoning was invoked
+- governance decisions and escalation reasons
+- latency or timing metadata (when tracked)
+
+Trace artifacts make the system:
+
+- **debuggable** – failures can be located quickly
+- **explainable** – the full reasoning path can be reconstructed
+- **auditable** – decisions can be justified after execution
+
+This observability layer is essential for operating LLM systems in production environments.
 
 ---
 

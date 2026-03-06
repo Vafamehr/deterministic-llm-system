@@ -3,10 +3,10 @@
 ```mermaid
 flowchart TD
 
-DET[Deterministic Stage] --> CAP{Missing Capability}
+D[Deterministic Layer] --> CAP{Missing Capability}
 
 CAP -->|Need Tool| TR[Tool Runner]
-CAP -->|Need Retrieval| RET[Retrieval Interface]
+CAP -->|Need Retrieval| RET[Retrieval System]
 
 TR --> REG[Tool Registry]
 REG --> TOOL[Tool Execution]
@@ -14,9 +14,9 @@ REG --> TOOL[Tool Execution]
 TOOL --> RES[Structured Tool Result]
 
 RET --> IDX[Knowledge Index]
-IDX --> CHUNK[Retrieved Context Chunks]
+IDX --> CHUNK[Retrieved Context]
 
-RES --> DET
-CHUNK --> DET
+RES --> D
+CHUNK --> D
 
-DET -->|Still Unresolved| LLM[LLM or Agent Reasoning]
+D -->|Still Unresolved| LLM[LLM Reasoning]

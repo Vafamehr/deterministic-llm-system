@@ -11,26 +11,27 @@ D -->|Resolved| C[Candidate Result]
 
 D -->|Unresolved| CAP{Missing Capability}
 
-CAP -->|Need Tool| T[Tool Runner]
-CAP -->|Need Context| RAG[Retrieval System]
-CAP -->|Still Unresolved| LQ{Allow LLM Reasoning}
+CAP -->|Tool Needed| T[Tool Runner]
+CAP -->|Context Needed| R[Retrieval System]
+CAP -->|No Structured Option| LQ{Allow LLM Reasoning}
 
 T --> D
-RAG --> D
+R --> D
 
 D -->|Still Unresolved| LQ
 
-LQ -->|Yes| L[LLM or Agent Reasoning]
+LQ -->|Yes| L[LLM Reasoning]
 LQ -->|No| C
 
 L --> C
 
 C --> G[Governance Gate]
+
 G --> OUT[Final Output]
 
 O -.-> TR[Trace Artifacts]
 D -.-> TR
 T -.-> TR
-RAG -.-> TR
+R -.-> TR
 L -.-> TR
 G -.-> TR

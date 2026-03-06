@@ -3,12 +3,12 @@
 ```mermaid
 flowchart TD
 
-C[Candidate Result] --> G{Governance Check}
+C[Candidate Result] --> G{Governance Gate}
 
 G -->|Approved| OUT[Final Output]
 G -->|Needs Review| OUT
 
-subgraph Observability
+subgraph Observability Layer
 T[Trace Artifacts]
 end
 

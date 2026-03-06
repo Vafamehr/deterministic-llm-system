@@ -8,58 +8,118 @@ See diagram:
 
 The system processes every request through a **deterministic-first execution pipeline** controlled by the orchestrator.
 
-The goal is to **use reliable logic first**, then expand capability only when necessary.
+The guiding principle is simple: **use reliable logic first**, then expand system capability only when deterministic methods cannot resolve the request.
+
+This approach improves reliability, makes system behavior easier to debug, and ensures that LLM reasoning is used only when necessary.
 
 ---
 
 ## Pipeline Stages
 
 ### 1. Request Intake
-The **Orchestrator** receives the user request and determines the execution path.
+
+The **Orchestrator** receives the user request and initializes the execution pipeline.
+
+Its responsibilities include:
+
+- interpreting the request
+- determining the next execution step
+- coordinating the pipeline stages
+
+The orchestrator acts as the **central controller of system flow**.
+
+---
 
 ### 2. Deterministic Attempt
-The system first attempts to resolve the request using deterministic logic such as:
-- validation
-- rules
-- known transformations
 
-If a valid answer is produced, the system proceeds to governance.
+The system first attempts to resolve the request using deterministic logic.
+
+Examples include:
+
+- validation
+- rule execution
+- known transformations
+- structured reasoning
+
+If a valid result is produced, the pipeline proceeds directly to the **Governance stage**.
+
+This is the **preferred execution path** because deterministic logic is predictable and easy to test.
+
+---
 
 ### 3. Capability Expansion
 
 If deterministic logic cannot resolve the request, the orchestrator identifies the missing capability.
 
-Two options are available:
+Two structured expansion mechanisms are available.
 
-**Tool Execution**
-- The system calls structured tools through a registry.
-- Tools return structured results.
+#### Tool Execution
 
-**Retrieval**
-- The system retrieves contextual knowledge.
-- Retrieved chunks are returned to the deterministic layer.
+The system invokes a **Tool** through a registry.
+
+Tools:
+
+- perform structured external operations
+- return well-defined outputs
+- provide capabilities that deterministic logic alone cannot perform
+
+#### Retrieval
+
+The system performs **Retrieval** to obtain contextual knowledge.
+
+Retrieval:
+
+- queries a knowledge source
+- returns relevant context chunks
+- feeds structured context back into the deterministic layer
+
+After tools or retrieval complete, deterministic reasoning runs again using the newly available data.
+
+---
 
 ### 4. Optional LLM Reasoning
 
 If deterministic logic combined with tools or retrieval still cannot resolve the request, the system may allow **LLM reasoning**.
 
-LLM reasoning is therefore a **secondary capability**, not the primary engine.
+The LLM acts as a **bounded reasoning component** used only when earlier stages cannot complete the task.
+
+This design prevents the LLM from becoming the primary controller of the system.
+
+---
 
 ### 5. Governance
 
-The candidate result passes through a governance check that may evaluate:
+Before returning a result, the system passes the candidate output through the **Governance Gate**.
 
-- safety
-- ambiguity
-- missing evidence
+Governance checks may include:
+
+- safety evaluation
+- ambiguity detection
+- evidence verification
+- policy validation
+
+Only approved results move to the final stage.
+
+---
 
 ### 6. Final Output
 
-If governance approves the result, the system returns the final answer.
+If governance approves the result, the system returns the **final answer** to the user.
+
+---
 
 ### 7. Observability
 
-Every stage produces **trace artifacts** so the system can be inspected and debugged.
+Every stage in the pipeline produces **trace artifacts**.
+
+Trace data records:
+
+- which components executed
+- decision points in the pipeline
+- execution outcomes
+- timing information
+
+This observability allows the system to be **debugged, inspected, and explained**.
 
 ---
 
@@ -71,7 +131,7 @@ User Request | Order ticket |
 Orchestrator | Head chef |
 Deterministic Logic | Standard recipe |
 Tool Execution | Pantry runner |
-Retrieval | Recipe book |
+Retrieval | Recipe book lookup |
 LLM Reasoning | Creative chef |
 Governance | Quality check |
 Trace | Ticket history |
