@@ -213,3 +213,5 @@ Most supply chain data science work revolves around:
 - evaluating policies using simulation
 
 Understanding these concepts is essential for building realistic supply chain AI systems.
+
+
