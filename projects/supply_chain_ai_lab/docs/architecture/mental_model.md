@@ -1,30 +1,30 @@
 # Mental Model — The Restaurant Network Analogy
 
-To understand the Supply Chain AI Lab, imagine running a **large restaurant chain**.
+To understand the Supply Chain AI Lab, imagine operating a **large restaurant chain**.
 
-Each restaurant must operate smoothly while sharing supply resources across the network.
+Each restaurant must run smoothly while sharing ingredients, suppliers, and logistics across the network.
 
-This analogy helps explain how supply chains operate.
+This analogy provides an intuitive way to understand how modern retail supply chains operate.
 
 ---
 
-## The Restaurant System
+# The Restaurant Network
 
-Imagine a company that owns **100 restaurants across the country**.
+Imagine a company operating **100 restaurants across the country**.
 
-Each restaurant must decide:
+Each restaurant must constantly make decisions such as:
 
 - how many meals will be ordered tomorrow
 - how many ingredients must be stocked
-- when to order new ingredients
-- whether to move ingredients between locations
-- how to react if a supplier fails
+- when to reorder ingredients
+- whether ingredients should be transferred between locations
+- how to respond when a supplier fails
 
-This is exactly how a **retail supply chain** operates.
+Retail supply chains operate in exactly the same way, except the products are retail goods instead of meals.
 
 ---
 
-## Mapping the Analogy
+# Mapping the Analogy
 
 | Supply Chain Concept | Restaurant Analogy |
 |---|---|
@@ -32,147 +32,153 @@ This is exactly how a **retail supply chain** operates.
 | Store | Restaurant |
 | Warehouse | Central kitchen |
 | Demand | Customer orders |
-| Forecast | Predicting tomorrow’s orders |
+| Forecast | Predicting tomorrow's orders |
 | Inventory | Ingredients in the fridge |
 | Replenishment | Ordering new ingredients |
 | Allocation | Sending ingredients to restaurants |
 | Disruption | Supplier delay |
-| Stockout | Running out of food |
-| Service Level | Customers get what they ordered |
+| Stockout | Running out of ingredients |
+| Service Level | Customers receive what they ordered |
 
 ---
 
-## Where Machine Learning Fits
+# Where Machine Learning Fits
 
-Machine learning helps answer questions like:
+Machine learning helps answer demand-related questions such as:
 
 - How many burgers will customers order tomorrow?
-- Which restaurant will run out of tomatoes?
-- How does a promotion change demand?
+- Which restaurants are likely to run out of tomatoes?
+- How will a promotion affect demand?
 
-This is **Demand Forecasting**.
+This problem is known as **Demand Forecasting**, which forms the foundation of many supply chain decisions.
 
 ---
 
-## Where Simulation Fits
+# Where Simulation Fits
 
-Simulation answers:
+Forecasts are never perfect. Simulation helps answer:
 
 > What happens if our predictions are wrong?
 
-Example questions:
+Examples:
 
 - Will we run out of chicken next week?
 - Will we waste too many ingredients?
 - What if demand suddenly spikes?
 
-Simulation allows the system to test **what-if scenarios**.
+Simulation allows the system to evaluate **what-if scenarios** before real decisions are implemented.
 
 ---
 
-## Where Decision Logic Fits
+# Where Decision Logic Fits
 
-Decision logic determines actions such as:
+Decision logic determines how the system responds to forecasts and simulations.
+
+Examples include:
 
 - reorder inventory
 - transfer inventory between locations
-- adjust safety stock
+- adjust safety stock levels
 
-These decisions can be:
+These decisions may be based on:
 
-- rule-based
-- heuristic
-- optimization-driven
-- ML-assisted
+- simple rules
+- heuristics
+- optimization models
+- machine-learning-assisted policies
 
 ---
 
-## Where LLMs Fit
+# Where LLMs Fit
 
-LLMs do not replace forecasting or simulation.
+Large Language Models do not replace forecasting or optimization.
 
-Instead, they help with:
+Instead, they help interpret and explain the system.
 
-- explaining system outputs
+Examples include:
+
+- explaining forecast changes
 - summarizing disruptions
-- comparing scenarios
-- assisting human decision-makers
+- comparing operational scenarios
+- assisting planners in making decisions
 
-Example:
+Example explanation:
 
-"Three stores will likely run out of chicken by Friday due to higher demand and delayed supplier shipments."
+> "Three stores are projected to run out of chicken by Friday due to increased demand and delayed supplier shipments."
 
 ---
 
-## The Goal of the Lab
+# The Goal of the Supply Chain AI Lab
 
-The Supply Chain AI Lab simulates this restaurant network.
+The Supply Chain AI Lab simulates this restaurant-style network.
 
-It combines:
+The system combines:
 
 - machine learning
 - simulation
-- decision policies
+- operational decision policies
 - LLM reasoning
 
-to create a realistic AI-powered supply chain system.
+to create a realistic AI-powered supply chain decision environment.
 
 ---
 
-## The Three Operational Layers of Retail Supply Chains
+# Three Operational Layers of Retail Supply Chains
 
-Retail supply chains can also be understood through three operational layers.
+Retail supply chains can be understood through three interacting layers.
 
-### 1. Demand Layer
+---
+
+## 1. Demand Layer
 
 This layer answers:
 
 **What will customers buy?**
 
-Typical problems:
+Typical problems include:
 
 - demand forecasting
 - promotion impact modeling
 - seasonality detection
 - demand anomaly detection
 
-This is where **machine learning is most heavily used**.
+Machine learning is heavily used in this layer.
 
 ---
 
-### 2. Inventory and Flow Layer
+## 2. Inventory and Flow Layer
 
 This layer answers:
 
 **Where should products be and when?**
 
-Typical problems:
+Typical problems include:
 
 - replenishment planning
-- safety stock decisions
+- safety stock calculations
 - inventory allocation
 - store transfers
 - warehouse distribution
 
 This layer often combines:
 
-- forecasting
+- forecasts
 - rules and heuristics
-- optimization
+- optimization methods
 
 ---
 
-### 3. Disruption and Decision Layer
+## 3. Disruption and Decision Layer
 
 This layer answers:
 
 **What should we do when reality deviates from plan?**
 
-Typical problems:
+Examples include:
 
 - supplier delays
 - demand spikes
-- stockout risks
+- inventory shortages
 - logistics failures
 
 This layer benefits from:

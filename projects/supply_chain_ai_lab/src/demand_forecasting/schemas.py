@@ -24,4 +24,12 @@ class ForecastFeatureRow:
     location_id: str
     date: date
     features: Dict[str, float]
-    target: float      
+    target: float 
+
+
+@dataclass
+class ForecastPredictionRow:
+    sku_id: str
+    location_id: str
+    prediction_date: date
+    features: Dict[str, float]         

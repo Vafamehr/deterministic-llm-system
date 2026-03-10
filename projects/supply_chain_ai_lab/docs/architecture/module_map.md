@@ -1,14 +1,14 @@
 # Supply Chain AI Lab — Module Map
 
-This document defines the major modules of the Supply Chain AI Lab.
+This document defines the major modules of the **Supply Chain AI Lab**.
 
-The lab is designed as a modular retail supply chain AI system, where each module solves a specific business problem while sharing common data, simulation, and reasoning layers.
+The lab is designed as a **modular retail supply chain AI system**, where each module solves a specific business problem while sharing common data, simulation, and reasoning layers.
 
 ---
 
 # Foundational Modules
 
-These modules form the backbone of the lab.
+These modules form the backbone of the system.
 
 ## 1. Demand Forecasting
 
@@ -22,8 +22,8 @@ Demand forecasting is the foundation of most downstream supply chain decisions.
 
 Typical outputs:
 
-- next-week demand forecast
-- forecast uncertainty
+- next-period demand forecasts
+- forecast uncertainty estimates
 - demand trend summaries
 
 ---
@@ -32,7 +32,7 @@ Typical outputs:
 
 Purpose:
 
-Determine when and how much inventory should be replenished.
+Determine **when and how much inventory should be replenished**.
 
 Why it matters:
 
@@ -41,7 +41,7 @@ This module converts demand expectations into operational inventory decisions.
 Typical outputs:
 
 - reorder recommendations
-- safety stock logic
+- safety stock calculations
 - stockout risk indicators
 
 ---
@@ -54,7 +54,7 @@ Simulate how inventory evolves over time under demand, lead times, and replenish
 
 Why it matters:
 
-Simulation allows the system to test policies and understand consequences before real deployment.
+Simulation allows the system to **test policies and evaluate outcomes before real deployment**.
 
 Typical outputs:
 
@@ -73,11 +73,11 @@ These modules operate across multiple locations in the retail network.
 
 Purpose:
 
-Decide how limited inventory should be distributed across stores or moved between locations.
+Determine how limited inventory should be **distributed across stores or moved between locations**.
 
 Why it matters:
 
-Demand differs across locations, and supply is often constrained.
+Demand varies across locations and supply is often constrained.
 
 Typical outputs:
 
@@ -110,13 +110,13 @@ Typical outputs:
 
 # Advanced Business Modules
 
-These modules expand the system into richer retail decision problems.
+These modules extend the system into broader retail decision problems.
 
 ## 6. Assortment Optimization
 
 Purpose:
 
-Decide which products should be stocked at which stores.
+Determine **which products should be stocked at which stores**.
 
 Why it matters:
 
@@ -125,7 +125,7 @@ Not every store should carry every SKU.
 Typical outputs:
 
 - assortment recommendations
-- low-performing SKU flags
+- low-performing SKU alerts
 - store-specific product mix suggestions
 
 ---
@@ -134,18 +134,18 @@ Typical outputs:
 
 Purpose:
 
-Use AI and LLM-based reasoning to support decisions made by planners or operators.
+Use AI and LLM-based reasoning to assist planners and operators in making decisions.
 
 Examples:
 
-- explain forecast changes
-- summarize disruption causes
-- compare policy outcomes
-- recommend next actions
+- explaining forecast changes
+- summarizing disruption causes
+- comparing policy outcomes
+- recommending next actions
 
 Typical outputs:
 
-- business summaries
+- operational summaries
 - scenario comparisons
 - decision-support narratives
 
@@ -153,9 +153,9 @@ Typical outputs:
 
 # Shared System Layers
 
-All modules should rely on shared infrastructure.
+All modules rely on shared infrastructure components.
 
-## Shared Layers
+Shared layers include:
 
 - retail data model
 - feature pipelines
@@ -165,11 +165,13 @@ All modules should rely on shared infrastructure.
 - LLM reasoning layer
 - bounded agent orchestration
 
+These layers ensure consistency and allow modules to interact with the same underlying data and logic.
+
 ---
 
 # Recommended Build Order
 
-The recommended implementation order is:
+The recommended implementation order for the Supply Chain AI Lab is:
 
 1. demand forecasting
 2. inventory simulation
@@ -179,4 +181,4 @@ The recommended implementation order is:
 6. assortment optimization
 7. recommendation-based decision support
 
-This order ensures that later modules build on strong foundations.
+This order ensures that later modules build on strong analytical foundations.

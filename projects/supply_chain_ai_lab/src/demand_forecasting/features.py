@@ -1,6 +1,7 @@
 from typing import List, Dict
-from .schemas import DemandRecord, DemandDataset, ForecastFeatureRow
+from .schemas import DemandRecord, DemandDataset, ForecastFeatureRow, ForecastPredictionRow
 import pandas as pd
+from datetime import date, timedelta
 
 
 def create_lag_features(series: List[DemandRecord], lag: int = 1) -> List[Dict]:
@@ -158,3 +159,58 @@ def feature_rows_to_dataframe(rows: List[ForecastFeatureRow]) -> pd.DataFrame:
         flattened_rows.append(output_row)
 
     return pd.DataFrame(flattened_rows)
+
+
+def build_prediction_row_for_series(
+    series: List[DemandRecord],
+    lag_steps: List[int] = [1, 2],
+    rolling_windows: List[int] = [3],
+) -> ForecastPredictionRow:
+    """
+    Build one prediction feature row for the next time step of a single series.
+    """
+
+    if not series:
+        raise ValueError("Series is empty.")
+
+    max_lag = max(lag_steps) if lag_steps else 0
+    max_window = max(rolling_windows) if rolling_windows else 0
+    required_history = max(max_lag, max_window)
+
+    if len(series) < required_history:
+        raise ValueError(
+            f"Not enough history to build prediction row. "
+            f"Need at least {required_history} records, got {len(series)}."
+        )
+
+    last_record = series[-1]
+    feature_dict: Dict[str, float] = {}
+
+    for lag in lag_steps:
+        feature_dict[f"lag_{lag}"] = float(series[-lag].demand)
+
+    for window in rolling_windows:
+        history = [record.demand for record in series[-window:]]
+        feature_dict[f"rolling_mean_{window}"] = float(sum(history) / window)
+
+    return ForecastPredictionRow(
+        sku_id=last_record.sku_id,
+        location_id=last_record.location_id,
+        prediction_date=last_record.date + timedelta(days=1),
+        features=feature_dict,
+    )
+
+
+def prediction_row_to_dataframe(row: ForecastPredictionRow) -> pd.DataFrame:
+    """
+    Convert one prediction row into a flat pandas DataFrame.
+    """
+
+    output_row = {
+        "sku_id": row.sku_id,
+        "location_id": row.location_id,
+        "prediction_date": row.prediction_date,
+    }
+    output_row.update(row.features)
+
+    return pd.DataFrame([output_row])

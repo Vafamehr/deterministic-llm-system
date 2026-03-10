@@ -1,12 +1,21 @@
 # Retail Data Model
 
-This document defines the core data structure used throughout the Supply Chain AI Lab.
+This document defines the **core data structure used throughout the Supply Chain AI Lab**.
 
-The entire system is built around the concept:
+The entire system is built around the fundamental supply chain key:
 
-**SKU × Location × Time**
+```
+SKU × Location × Time
+```
 
-This structure allows the system to represent demand, inventory, and supply chain decisions consistently.
+This structure allows the system to consistently represent:
+
+- demand
+- inventory
+- shipments
+- supply chain decisions
+
+All analytical modules in the system operate on data organized using these dimensions.
 
 ---
 
@@ -14,7 +23,7 @@ This structure allows the system to represent demand, inventory, and supply chai
 
 ## SKU (Product)
 
-A SKU represents a unique product sold by the retailer.
+A SKU represents a **unique product** sold by the retailer.
 
 Examples:
 
@@ -22,27 +31,29 @@ Examples:
 - Nike Air Max size 10
 - iPhone 14 128GB
 
-Each SKU has attributes such as:
+Typical SKU attributes may include:
 
-- category
+- product category
 - brand
 - unit price
 - cost
 - shelf life
 
+These attributes may later be used as **features for forecasting or optimization models**.
+
 ---
 
 ## Location
 
-A location represents where inventory is stored or sold.
+A location represents a **physical place where inventory exists**.
 
-Two common location types exist:
+Two primary location types are modeled.
 
 ### Store
 
 A retail store where customers purchase products.
 
-Stores have:
+Stores typically have:
 
 - customer demand
 - limited shelf capacity
@@ -52,38 +63,44 @@ Stores have:
 
 ### Warehouse / Distribution Center
 
-A warehouse that supplies multiple stores.
+Warehouses supply multiple stores.
 
-Warehouses:
+Their role is to:
 
-- store larger inventory
+- store larger quantities of inventory
 - replenish stores
-- balance supply across locations
+- redistribute inventory across the network
 
 ---
 
 ## Time
 
-Retail supply chains typically model time using:
+Retail supply chains operate over discrete time periods.
+
+Common time resolutions include:
 
 - daily periods
 - weekly periods
 
-Weekly aggregation is often used for forecasting.
+Weekly aggregation is frequently used for demand forecasting.
 
 Example:
 
 | week | start_date |
-|----|----|
+|-----|-----|
 | 2024-W01 | 2024-01-01 |
 
 ---
 
 # Core Data Tables
 
+The supply chain system uses several core datasets built on the **SKU × Location × Time** structure.
+
+---
+
 ## Sales Table
 
-Records customer purchases.
+Records customer purchases and is the **primary source of demand data**.
 
 Example schema:
 
@@ -91,13 +108,13 @@ Example schema:
 |----|----|----|----|
 | milk | store_01 | week_10 | 54 |
 
-This table is the primary source for **demand forecasting**.
+This table is the main input to the **demand forecasting module**.
 
 ---
 
 ## Inventory Table
 
-Tracks inventory levels.
+Tracks the amount of inventory available at each location.
 
 Example schema:
 
@@ -105,11 +122,17 @@ Example schema:
 |----|----|----|----|
 | milk | store_01 | week_10 | 32 |
 
+Inventory levels are required for:
+
+- replenishment decisions
+- simulation models
+- allocation logic
+
 ---
 
 ## Shipment Table
 
-Records inventory movement.
+Records the movement of inventory between locations.
 
 Example schema:
 
@@ -117,45 +140,81 @@ Example schema:
 |----|----|----|----|----|
 | milk | warehouse_01 | store_01 | week_10 | 100 |
 
+Shipment data is used to track supply flows through the network.
+
 ---
 
 ## Lead Time Table
 
 Defines how long it takes for shipments to arrive.
 
-Example:
+Example schema:
 
 | supplier | sku | lead_time_days |
 |----|----|----|
 | supplier_A | milk | 3 |
 
+Lead times influence:
+
+- replenishment timing
+- safety stock calculations
+- simulation behavior
+
 ---
 
 ## Promotion Table
 
-Records promotional events that affect demand.
+Records promotional events that temporarily affect demand.
 
-Example:
+Example schema:
 
 | sku | store | week | promotion_type |
 |----|----|----|----|
 | milk | store_01 | week_10 | discount |
 
-Promotions often increase demand temporarily.
+Promotions are important features for forecasting models.
+
+---
+
+# Relationship to the Forecasting Module
+
+The demand forecasting module converts raw sales data into structured forecasting inputs.
+
+Example transformation:
+
+```
+Sales Table
+      ↓
+Demand Records
+      ↓
+Item–Location Time Series
+      ↓
+Feature Engineering
+      ↓
+Training / Prediction Feature Tables
+```
+
+This transformation is implemented inside:
+
+```
+src/demand_forecasting/
+```
 
 ---
 
 # Why This Data Model Matters
 
-This data model supports:
+This data model allows the system to support multiple supply chain analytics capabilities using a shared structure.
 
-- demand forecasting models
+These include:
+
+- demand forecasting
 - inventory simulation
-- replenishment decisions
-- allocation algorithms
+- replenishment optimization
+- allocation and transfers
 - disruption analysis
 
-By using a consistent structure, the system can combine:
+Because every module uses the same **SKU × Location × Time** foundation, the system can combine:
 
 - machine learning
 - simulation

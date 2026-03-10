@@ -1,7 +1,7 @@
 from datetime import date
 
 from .schemas import DemandRecord, DemandDataset
-from .features import build_feature_rows_for_dataset, feature_rows_to_dataframe
+from .features import build_feature_rows_for_dataset, feature_rows_to_dataframe, build_prediction_row_for_series, prediction_row_to_dataframe
 
 
 
@@ -51,6 +51,33 @@ def main() -> None:
     assert row_2.target == 26.0
 
     print("Full dataset feature pipeline test passed.")
+
+
+    prediction_row = build_prediction_row_for_series(
+    series=[
+        DemandRecord(sku_id="SKU1", location_id="STORE1", date=date(2024, 1, 1), demand=10),
+        DemandRecord(sku_id="SKU1", location_id="STORE1", date=date(2024, 1, 2), demand=12),
+        DemandRecord(sku_id="SKU1", location_id="STORE1", date=date(2024, 1, 3), demand=14),
+        DemandRecord(sku_id="SKU1", location_id="STORE1", date=date(2024, 1, 4), demand=16),
+    ],
+    lag_steps=[1, 2],
+    rolling_windows=[3],
+    )
+
+    print("\nPrediction row:\n")
+    print(prediction_row)
+
+    assert prediction_row.sku_id == "SKU1"
+    assert prediction_row.location_id == "STORE1"
+    assert prediction_row.prediction_date == date(2024, 1, 5)
+    assert prediction_row.features["lag_1"] == 16.0
+    assert prediction_row.features["lag_2"] == 14.0
+    assert prediction_row.features["rolling_mean_3"] == 14.0
+
+    prediction_df = prediction_row_to_dataframe(prediction_row)
+
+    print("\nPrediction feature table:\n")
+    print(prediction_df)
 
 
 if __name__ == "__main__":

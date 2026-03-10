@@ -489,3 +489,246 @@ A pandas DataFrame makes it easy to:
 - y = target column
 
 This is the final bridge between feature engineering and model training.
+
+# Prediction Feature Generation
+
+Training features and prediction features are not identical.
+
+During training, each feature row includes the **target demand value** because the model must learn the relationship between features and outcomes.
+
+Example training row:
+
+| sku_id | location_id | date | lag_1 | lag_2 | rolling_mean_3 | target |
+|------|------|------|------|------|------|------|
+| SKU1 | STORE1 | 2024-01-04 | 14 | 12 | 12.0 | 16 |
+
+However, when generating a forecast, the future demand value is **unknown**.
+
+Therefore prediction rows only contain the **input features**.
+
+Example prediction row:
+
+| sku_id | location_id | prediction_date | lag_1 | lag_2 | rolling_mean_3 |
+|------|------|------|------|------|------|
+| SKU1 | STORE1 | 2024-01-05 | 16 | 14 | 14.0 |
+
+The forecasting model then produces:
+
+```
+predicted_demand = model.predict(features)
+```
+
+This separation between **training rows** and **prediction rows** ensures the system does not accidentally leak future information into the model.
+
+---
+
+# Feature Leakage
+
+Feature leakage occurs when a forecasting model accidentally uses information from the future.
+
+Example mistake:
+
+```
+rolling_mean_3 = mean(demand_t, demand_t-1, demand_t-2)
+```
+
+This includes the **current demand value**, which the model should not know during prediction.
+
+Correct version:
+
+```
+rolling_mean_3 = mean(demand_t-1, demand_t-2, demand_t-3)
+```
+
+All forecasting features must be computed **only from past observations**.
+
+Preventing leakage is one of the most important design rules in forecasting systems.
+
+---
+
+# Scaling Forecasting Across Many Series
+
+Retail forecasting systems rarely operate on a single time series.
+
+A realistic dataset may contain:
+
+- 10,000 SKUs
+- 1,000 stores
+
+This could produce **millions of item-location series**.
+
+Forecasting pipelines must therefore scale across many series automatically.
+
+Operational flow:
+
+```
+DemandDataset
+    ↓
+Series Segmentation
+    ↓
+Feature Generation Per Series
+    ↓
+Combine All Feature Rows
+    ↓
+Model Training
+```
+
+This design allows the same forecasting logic to operate across the entire retail network.
+
+---
+
+# Why This Architecture Matters
+
+The architecture used in this project reflects how real forecasting systems are designed.
+
+Key properties:
+
+- explicit data structures
+- clear separation of pipeline stages
+- scalable multi-series processing
+- safe feature generation without leakage
+- conversion to ML-ready training tables
+
+These principles make forecasting systems easier to:
+
+- extend
+- test
+- debug
+- explain in interviews
+
+# Naive Forecast Baseline in the Project
+
+The first implemented forecasting model in this project is the **naive forecast baseline**.
+
+Rule:
+
+```text
+next demand = last observed demand
+```
+
+In other words, the forecast for the next period is simply the most recent demand value in the series.
+
+Example:
+
+| date | demand |
+|---|---:|
+| 2024-01-01 | 10 |
+| 2024-01-02 | 12 |
+| 2024-01-03 | 14 |
+| 2024-01-04 | 16 |
+
+Naive forecast for the next period:
+
+```text
+16
+```
+
+## Why this baseline matters
+
+A forecasting model should never be evaluated in isolation.
+
+The naive forecast provides a minimum benchmark that any stronger model should try to outperform.
+
+Why it is important:
+
+- it is simple and easy to interpret
+- it helps detect broken modeling pipelines
+- many complex forecasting models fail to beat it
+- it provides credibility in interviews and real projects
+
+## How it is used in this project
+
+The project currently implements the naive forecast as:
+
+- input: one ordered demand series
+- output: the next predicted demand value
+
+The evaluation metric currently implemented is:
+
+- **MAE (Mean Absolute Error)**
+
+This creates the first complete forecasting loop:
+
+```text
+series → naive forecast → actual value → MAE
+```
+
+This baseline will later be compared against stronger forecasting models.
+
+### Evaluating a Forecast on a Single Time Series
+
+Before evaluating models across many SKU-location series, we must first evaluate a forecast on a single time series.
+
+In a naive forecast:
+
+The prediction for the next time step equals the most recent observed demand.
+
+Because the first observation has no previous value, evaluation begins from the second observation.
+
+Example:
+
+Demand series:
+
+[10, 12, 11, 15]
+
+Naive predictions:
+
+[10, 12, 11]
+
+Actual values:
+
+[12, 11, 15]
+
+Evaluation compares predictions vs actuals using an error metric such as Mean Absolute Error (MAE).
+
+This forms the foundation of forecasting evaluation before expanding to multi-series evaluation.
+
+### Multi-Series Forecast Evaluation
+
+Retail forecasting rarely involves a single time series.
+
+Instead, demand data is divided into many SKU-location time series.
+
+Example:
+
+- SKU1 at StoreA
+- SKU1 at StoreB
+- SKU2 at StoreA
+- SKU2 at StoreB
+
+Each pair forms an independent demand series.
+
+Evaluation therefore requires:
+
+1. splitting the dataset into item-location series
+2. evaluating each series independently
+3. collecting the error metric for each series
+
+This allows analysts to inspect forecasting performance across the network.
+
+### Sparse Series Handling in Evaluation
+
+In real retail datasets, some SKU-location series may contain too little history for forecast evaluation.
+
+Example:
+
+- a series with only one observation cannot produce a forecast error
+- therefore, dataset-level evaluation should skip such series safely
+
+This prevents the evaluation pipeline from failing when sparse or incomplete demand histories are present.
+
+### Aggregate Forecast Error Across Many Series
+
+After evaluating each SKU-location series separately, we often want one overall summary metric.
+
+One simple approach is to take the mean of the per-series MAE values.
+
+Example:
+
+- Series A MAE = 2.0
+- Series B MAE = 3.0
+- Series C MAE = 1.0
+
+Mean MAE across series = 2.0
+
+This gives a simple overall view of forecasting quality across the dataset.
