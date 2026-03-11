@@ -10,11 +10,11 @@ This module implements the **demand forecasting subsystem** of the Supply Chain 
 
 Its purpose is to transform raw demand history into **model-ready training data and prediction inputs**, which will later support:
 
-- inventory planning
-- replenishment decisions
-- allocation and transfers
-- simulation experiments
-- LLM-based decision support
+* inventory planning
+* replenishment decisions
+* allocation and transfers
+* simulation experiments
+* LLM-based decision support
 
 The module is designed to resemble how a forecasting component would be structured in a real supply chain analytics system.
 
@@ -40,8 +40,8 @@ Prediction Feature Table
 
 Two outputs are produced:
 
-- **training feature tables** used to train forecasting models
-- **prediction feature tables** used for model inference
+* **training feature tables** used to train forecasting models
+* **prediction feature tables** used for model inference
 
 ---
 
@@ -53,10 +53,10 @@ A **DemandRecord** represents one observation of demand.
 
 Example fields:
 
-- sku_id
-- location_id
-- date
-- demand
+* sku_id
+* location_id
+* date
+* demand
 
 Each record represents one row in a retail demand dataset.
 
@@ -93,15 +93,15 @@ Demand forecasting models require **signals derived from past demand**.
 
 Common features include:
 
-- lag features  
-- rolling averages  
-- calendar indicators (future)  
-- product/store attributes (future)
+* lag features
+* rolling averages
+* calendar indicators (future)
+* product/store attributes (future)
 
 Example features:
 
 | lag_1 | lag_2 | rolling_mean_3 |
-|------|------|------|
+| ----- | ----- | -------------- |
 
 These features allow the model to learn patterns in demand history.
 
@@ -129,9 +129,9 @@ Contains forecasting model implementations.
 
 Examples that may be implemented later:
 
-- baseline regression models
-- gradient boosting models
-- time-series models
+* baseline regression models
+* gradient boosting models
+* time-series models
 
 ---
 
@@ -141,11 +141,11 @@ Responsible for **feature engineering and feature table construction**.
 
 Main responsibilities:
 
-- generating lag features
-- generating rolling mean features
-- constructing training feature rows
-- constructing prediction feature rows
-- converting feature rows into pandas DataFrames
+* generating lag features
+* generating rolling mean features
+* constructing training feature rows
+* constructing prediction feature rows
+* converting feature rows into pandas DataFrames
 
 ---
 
@@ -155,23 +155,54 @@ Responsible for **preparing demand data for forecasting**.
 
 Key responsibilities:
 
-- validating demand data
-- sorting records chronologically
-- splitting datasets into item-location series
+* validating demand data
+* sorting records chronologically
+* splitting datasets into item-location series
+* generating historical slices for evaluation
+* performing train/test splits for forecasting experiments
 
 ---
 
 ### `evaluate.py`
 
-Responsible for **forecast evaluation**.
+Responsible for **forecast evaluation and experimentation**.
 
-Future metrics may include:
+Core responsibilities include:
 
-- MAE
-- RMSE
-- MAPE
+* evaluating forecasts on a single series
+* evaluating forecasts across many series
+* computing aggregate error metrics
+* supporting train/test forecasting experiments
 
-These metrics measure the quality of model predictions.
+Supported evaluation workflows include:
+
+* rolling evaluation across a full series
+* train/test split evaluation
+* dataset-level evaluation across many SKU-location series
+
+Example dataset-level workflow:
+
+```
+DemandDataset
+→ split_into_series
+→ train_test_split_series
+→ evaluate_naive_train_test
+→ collect per-series MAE
+```
+
+Implemented helper:
+
+```
+evaluate_naive_dataset_with_split(dataset, test_size)
+```
+
+Output:
+
+```
+Dict[(sku_id, location_id)] → MAE
+```
+
+This enables large-scale forecasting experiments across the full network of demand series.
 
 ---
 
@@ -181,9 +212,9 @@ Defines structured data interfaces used across the forecasting module.
 
 Examples include:
 
-- `DemandRecord`
-- `DemandDataset`
-- `ForecastFeatureRow`
-- `ForecastPredictionRow`
+* `DemandRecord`
+* `DemandDataset`
+* `ForecastFeatureRow`
+* `ForecastPredictionRow`
 
 These structures ensure consistent communication between components.

@@ -732,3 +732,82 @@ Example:
 Mean MAE across series = 2.0
 
 This gives a simple overall view of forecasting quality across the dataset.
+
+### Structured Forecast Evaluation Results
+
+As forecasting systems become more realistic, evaluation should return a structured result instead of only a raw dictionary.
+
+A structured evaluation result can contain:
+
+- per-series error values
+- overall mean error
+- number of evaluated series
+
+This makes the evaluation output easier to use for reporting, comparison, and later dashboarding.
+
+### Rolling History Slices for Forecast Evaluation
+
+Forecast models must be evaluated sequentially over time.
+
+For a demand series:
+
+[10, 12, 11, 15]
+
+Evaluation creates historical training windows:
+
+[10] → predict 12  
+[10,12] → predict 11  
+[10,12,11] → predict 15
+
+This simulates how forecasts would have been made in real time.
+
+This process is the foundation of forecasting backtesting.
+
+### Train/Test Forecast Evaluation
+
+A realistic forecasting experiment separates known history from future demand.
+
+For one SKU-location series:
+
+- train set = historical demand available to the model
+- test set = future demand held out for evaluation
+
+A naive forecast can then be evaluated on the test horizon.
+
+Example:
+
+Train:
+[10, 12, 11]
+
+Test:
+[15, 16]
+
+Naive predictions:
+[11, 15]
+
+Actual test demand:
+[15, 16]
+
+This simulates forecasting future periods using only past information.
+
+### Train/Test Forecast Evaluation Across Many Series
+
+Retail forecasting systems operate across many SKU-location demand series.
+
+A realistic experiment must evaluate forecasts on each series independently.
+
+The process is:
+
+dataset  
+→ split_into_series  
+→ for each series: train/test split  
+→ forecast on test horizon  
+→ compute error metric
+
+Example:
+
+Series A → MAE = 2.3  
+Series B → MAE = 1.8  
+Series C → MAE = 3.1  
+
+This allows analysts to compare forecasting performance across the network.

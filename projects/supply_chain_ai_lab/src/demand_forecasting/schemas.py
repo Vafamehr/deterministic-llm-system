@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 @dataclass
 class DemandRecord:
@@ -32,4 +32,13 @@ class ForecastPredictionRow:
     sku_id: str
     location_id: str
     prediction_date: date
-    features: Dict[str, float]         
+    features: Dict[str, float]  
+
+
+
+
+@dataclass
+class ForecastEvaluationResult:
+    per_series_mae: Dict[Tuple[str, str], float]
+    mean_mae: float
+    series_count: int           

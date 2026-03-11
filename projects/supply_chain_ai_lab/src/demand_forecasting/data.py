@@ -37,4 +37,55 @@ def split_into_series(dataset: DemandDataset) -> Dict[Tuple[str, str], List[Dema
     return dict(series)
 
 
+def generate_history_slices(series: List[DemandRecord]) -> List[List[DemandRecord]]:
+    """
+    Generate rolling historical slices for forecasting evaluation.
+
+    Example:
+
+    [10,12,11,15] →
+
+    [
+        [10],
+        [10,12],
+        [10,12,11]
+    ]
+    """
+
+    if len(series) < 2:
+        raise ValueError("Series must contain at least two observations")
+
+    slices = []
+
+    for i in range(1, len(series)):
+        slices.append(series[:i])
+
+    return slices
+
+
+def train_test_split_series(series, test_size: int):
+    """
+    Split a time series into train and test segments.
+
+    Example:
+
+    series = [10,12,11,15,16,18]
+    test_size = 2
+
+    train = [10,12,11,15]
+    test  = [16,18]
+    """
+
+    if test_size <= 0:
+        raise ValueError("test_size must be positive")
+
+    if len(series) <= test_size:
+        raise ValueError("Series too short for requested test_size")
+
+    train = series[:-test_size]
+    test = series[-test_size:]
+
+    return train, test
+
+
 
