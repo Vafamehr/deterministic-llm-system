@@ -1,220 +1,207 @@
-# Demand Forecasting Module
+# Demand Forecasting Module Architecture
 
-Location:
+The demand forecasting module is organized as a layered system where each layer has a clear responsibility.
 
-```
-projects/supply_chain_ai_lab/src/demand_forecasting/
-```
+This structure keeps the forecasting pipeline modular, testable, and easy to extend with new models.
 
-This module implements the **demand forecasting subsystem** of the Supply Chain AI Lab.
+Mental structure of the module:
 
-Its purpose is to transform raw demand history into **model-ready training data and prediction inputs**, which will later support:
+schemas → data → features → model → evaluate → service
 
-* inventory planning
-* replenishment decisions
-* allocation and transfers
-* simulation experiments
-* LLM-based decision support
-
-The module is designed to resemble how a forecasting component would be structured in a real supply chain analytics system.
+Each layer performs a specific role in the forecasting pipeline.
 
 ---
 
-# Forecasting Pipeline
+## Schemas Layer
 
-The forecasting module converts raw demand observations into structured inputs for machine learning models.
+The `schemas` module defines the core data structures used throughout the forecasting system.
 
-```
-DemandDataset
-      ↓
-split_into_series
-      ↓
-Item–Location Time Series
-      ↓
-Feature Engineering
-      ↓
-Training Feature Table
-      ↓
-Prediction Feature Table
-```
+Key objects:
 
-Two outputs are produced:
+- `DemandRecord`
+- `DemandDataset`
+- `ForecastFeatureRow`
+- `ForecastPredictionRow`
+- `ForecastEvaluationResult`
 
-* **training feature tables** used to train forecasting models
-* **prediction feature tables** used for model inference
+These dataclasses define the **system contracts**.
+
+They ensure that each stage of the pipeline receives well-defined inputs and produces predictable outputs.
+
+This prevents raw dictionaries or unstructured DataFrames from flowing through the system.
 
 ---
 
-# Core Concepts
+## Data Layer
 
-### Demand Record
-
-A **DemandRecord** represents one observation of demand.
-
-Example fields:
-
-* sku_id
-* location_id
-* date
-* demand
-
-Each record represents one row in a retail demand dataset.
-
----
-
-### Demand Series
-
-Forecasting operates on **time series**, not raw tables.
-
-A demand series represents the demand history for one item at one location.
-
-Example:
-
-```
-(SKU1, STORE1)
-
-Jan 1 → 10  
-Jan 2 → 12  
-Jan 3 → 14  
-Jan 4 → 16
-```
-
-Series are created by grouping records by:
-
-```
-(sku_id, location_id)
-```
-
----
-
-### Feature Generation
-
-Demand forecasting models require **signals derived from past demand**.
-
-Common features include:
-
-* lag features
-* rolling averages
-* calendar indicators (future)
-* product/store attributes (future)
-
-Example features:
-
-| lag_1 | lag_2 | rolling_mean_3 |
-| ----- | ----- | -------------- |
-
-These features allow the model to learn patterns in demand history.
-
----
-
-# Module Files
-
-### `__init__.py`
-
-Marks the folder as a Python module.
-
----
-
-### `service.py`
-
-Defines the **public interface** of the forecasting subsystem.
-
-Other modules in the system should interact with demand forecasting through this layer rather than calling internal components directly.
-
----
-
-### `model.py`
-
-Contains forecasting model implementations.
-
-Examples that may be implemented later:
-
-* baseline regression models
-* gradient boosting models
-* time-series models
-
----
-
-### `features.py`
-
-Responsible for **feature engineering and feature table construction**.
+The `data` module organizes raw demand records into usable time series.
 
 Main responsibilities:
 
-* generating lag features
-* generating rolling mean features
-* constructing training feature rows
-* constructing prediction feature rows
-* converting feature rows into pandas DataFrames
+- sorting demand records chronologically
+- grouping records into `(sku_id, location_id)` series
+- generating historical slices for evaluation
+- performing train/test splits for forecasting experiments
+
+Example flow:
+
+DemandDataset  
+→ split_into_series  
+→ {(sku_id, location_id): List[DemandRecord]}
+
+This segmentation step is critical because forecasting features must be computed **within each series independently**.
 
 ---
 
-### `data.py`
+## Feature Engineering Layer
 
-Responsible for **preparing demand data for forecasting**.
+The `features` module converts demand history into model-ready feature rows.
+
+Typical feature types:
+
+- lag features (lag_1, lag_2, etc.)
+- rolling statistics (rolling_mean_k)
+
+Example pipeline:
+
+DemandRecord series  
+→ build_feature_rows_for_series  
+→ ForecastFeatureRow objects
+
+Feature rows contain:
+
+- identifiers (`sku_id`, `location_id`)
+- timestamp
+- engineered features
+- target demand value
+
+These rows are then converted into a tabular dataset for machine learning.
+
+---
+
+## Model Layer
+
+The `model` module contains forecasting models and training logic.
+
+Implemented models include:
+
+- naive forecast baseline
+- linear regression
+- tree-based models such as XGBoost
+
+Model responsibilities:
+
+- train forecasting models
+- generate predictions from feature inputs
+
+Example flow:
+
+Feature rows  
+→ feature_rows_to_dataframe  
+→ train_linear_regression_model  
+→ predict_with_model
+
+This layer is intentionally modular so additional forecasting models can be added later.
+
+---
+
+## Evaluation Layer
+
+The `evaluate` module measures forecasting performance.
 
 Key responsibilities:
 
-* validating demand data
-* sorting records chronologically
-* splitting datasets into item-location series
-* generating historical slices for evaluation
-* performing train/test splits for forecasting experiments
+- compute forecast error metrics
+- evaluate forecasts on a single series
+- evaluate forecasts across many series
+- support rolling backtesting
+- support train/test horizon evaluation
+
+Primary metric used in the current system:
+
+**Mean Absolute Error (MAE)**
+
+Evaluation can operate at several levels:
+
+- single time series
+- dataset-level aggregation
+- train/test forecasting experiments
 
 ---
 
-### `evaluate.py`
+## Service Layer
 
-Responsible for **forecast evaluation and experimentation**.
+The `service` module provides the **external interface** for the forecasting system.
 
-Core responsibilities include:
+Other modules in the Supply Chain AI Lab should interact with forecasting only through these service functions.
 
-* evaluating forecasts on a single series
-* evaluating forecasts across many series
-* computing aggregate error metrics
-* supporting train/test forecasting experiments
+Examples:
 
-Supported evaluation workflows include:
+- `get_next_step_forecast`
+- `get_forecast_horizon`
 
-* rolling evaluation across a full series
-* train/test split evaluation
-* dataset-level evaluation across many SKU-location series
+Example usage:
 
-Example dataset-level workflow:
+series → model → next step forecast
 
-```
-DemandDataset
-→ split_into_series
-→ train_test_split_series
-→ evaluate_naive_train_test
-→ collect per-series MAE
-```
+or
 
-Implemented helper:
+series → model → multi-step horizon forecast
 
-```
-evaluate_naive_dataset_with_split(dataset, test_size)
-```
-
-Output:
-
-```
-Dict[(sku_id, location_id)] → MAE
-```
-
-This enables large-scale forecasting experiments across the full network of demand series.
+The service layer hides the internal feature engineering and model details from the rest of the system.
 
 ---
 
-### `schemas.py`
+## Recursive Multi-Step Forecasting
 
-Defines structured data interfaces used across the forecasting module.
+The module supports multi-step forecasting through **recursive prediction**.
 
-Examples include:
+Process:
 
-* `DemandRecord`
-* `DemandDataset`
-* `ForecastFeatureRow`
-* `ForecastPredictionRow`
+1. predict the next demand value
+2. append the predicted value to the series
+3. recompute features
+4. predict the next step again
 
-These structures ensure consistent communication between components.
+Example flow:
+
+history  
+↓  
+predict t+1  
+↓  
+append prediction  
+↓  
+predict t+2  
+↓  
+repeat until horizon reached
+
+This approach allows simple one-step models to generate forecasts for longer horizons.
+
+---
+
+## Full Forecasting Pipeline
+
+The complete demand forecasting pipeline in this project follows the structure below:
+
+DemandDataset  
+↓  
+split_into_series  
+↓  
+feature generation  
+↓  
+training table  
+↓  
+model training  
+↓  
+prediction rows  
+↓  
+forecast generation  
+↓  
+evaluation  
+
+This modular pipeline makes the forecasting system:
+
+- easier to debug
+- easier to extend with new models
+- easier to explain in interviews
+- closer to real production forecasting architectures

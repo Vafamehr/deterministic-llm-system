@@ -811,3 +811,144 @@ Series B → MAE = 1.8
 Series C → MAE = 3.1  
 
 This allows analysts to compare forecasting performance across the network.
+
+### Linear Regression as a Forecasting Baseline
+
+After establishing a naive forecast baseline, the next useful model is linear regression.
+
+Linear regression learns a relationship between input features and future demand.
+
+In this project, the input features come from demand history, such as:
+
+- lag_1
+- lag_2
+- rolling_mean_3
+
+The target is the future demand value associated with each feature row.
+
+This makes linear regression the first feature-based forecasting model in the module.
+
+It is still a simple baseline, but it is more expressive than the naive forecast because it can combine multiple historical signals.
+
+# Recursive Multi-Step Forecasting
+
+The forecasting models implemented in this project are primarily **one-step-ahead models**.
+
+This means the model learns to predict the next time step:
+
+demand(t+1)
+
+using historical features such as:
+
+- lag_1
+- lag_2
+- rolling_mean_3
+
+However, real supply chain decisions often require forecasts for **multiple future periods**, such as:
+
+- next 7 days
+- next 4 weeks
+- next 12 months
+
+To support this, the system uses **recursive forecasting**.
+
+## Recursive Forecasting Idea
+
+Instead of training a separate model for every horizon step, the same one-step model is used repeatedly.
+
+Process:
+
+1. predict demand at t+1  
+2. append the predicted value to the series  
+3. recompute lag and rolling features  
+4. predict demand at t+2  
+5. repeat until the desired horizon is reached  
+
+Example:
+
+History:
+
+[10, 12, 11, 15]
+
+Step 1 prediction:
+
+predict t+1 → 16
+
+Updated series:
+
+[10, 12, 11, 15, 16]
+
+Step 2 prediction:
+
+predict t+2 → 17
+
+And so on.
+
+## Why Recursive Forecasting Is Useful
+
+Recursive forecasting is widely used because:
+
+- it allows simple models to produce long-range forecasts  
+- it avoids training many separate models  
+- it works with standard machine learning models  
+- it is easy to implement in modular forecasting systems  
+
+However, it has an important limitation:
+
+**prediction errors can accumulate across the forecast horizon**.
+
+This means forecasts farther into the future may become less reliable.
+
+Despite this limitation, recursive forecasting remains one of the most common practical approaches in forecasting systems.
+
+---
+
+# Tree-Based Forecasting Models
+
+After simple baselines such as naive forecasting and linear regression, many forecasting systems use **tree-based machine learning models**.
+
+One widely used example is **XGBoost**.
+
+## Why Tree Models Work Well for Forecasting
+
+Tree-based models can capture nonlinear relationships between input features and demand.
+
+Examples include:
+
+- interactions between lag features  
+- nonlinear responses to recent demand changes  
+- threshold effects in demand behavior  
+
+Compared with linear regression, tree models can learn more complex patterns from historical demand signals.
+
+## Example Forecasting Features
+
+Typical forecasting features used by tree models include:
+
+- lag_1  
+- lag_2  
+- lag_7  
+- rolling_mean_3  
+- rolling_mean_7  
+- rolling_std_7  
+- calendar features such as day_of_week or month  
+
+Tree models can automatically combine these signals during training.
+
+## Role of XGBoost in the Project
+
+In the Supply Chain AI Lab, XGBoost serves as a **strong machine learning baseline**.
+
+The progression of forecasting models in the module is:
+
+naive forecast  
+→ linear regression  
+→ tree-based models (XGBoost)
+
+This progression mirrors how many real forecasting systems evolve:
+
+1. establish a simple baseline  
+2. introduce feature-based linear models  
+3. upgrade to more flexible models such as gradient boosting  
+
+This approach improves forecasting accuracy while keeping the forecasting architecture modular and extensible.

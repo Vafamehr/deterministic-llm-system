@@ -1,20 +1,27 @@
-from typing import List, Dict
-from .schemas import DemandRecord, DemandDataset, ForecastFeatureRow, ForecastPredictionRow
+from datetime import timedelta
+from typing import Dict, List, Optional
+
 import pandas as pd
-from datetime import date, timedelta
+
+from .schemas import (
+    DemandDataset,
+    DemandRecord,
+    ForecastFeatureRow,
+    ForecastPredictionRow,
+)
 
 
 def create_lag_features(series: List[DemandRecord], lag: int = 1) -> List[Dict]:
     """
-    Generates lag features for a demand series.
+    Generate simple lag features for a demand series.
 
-    Returns a list of dictionaries where each row contains:
+    Returns a list of dictionaries with:
     - date
     - demand
-    - lag_1, lag_2, ... depending on lag parameter
+    - lag_1, lag_2, ..., lag_k
     """
 
-    rows = []
+    rows: List[Dict] = []
 
     for i in range(lag, len(series)):
         row = {
@@ -30,17 +37,20 @@ def create_lag_features(series: List[DemandRecord], lag: int = 1) -> List[Dict]:
     return rows
 
 
-def create_rolling_mean_feature(series: List[DemandRecord], window: int = 3) -> List[Dict]:
+def create_rolling_mean_feature(
+    series: List[DemandRecord],
+    window: int = 3,
+) -> List[Dict]:
     """
-    Generates rolling mean features for a demand series.
+    Generate rolling mean features for a demand series.
 
-    Returns a list of dictionaries where each row contains:
+    Returns a list of dictionaries with:
     - date
     - demand
     - rolling_mean_{window}
     """
 
-    rows = []
+    rows: List[Dict] = []
 
     for i in range(window, len(series)):
         history = [series[j].demand for j in range(i - window, i)]
@@ -58,27 +68,30 @@ def create_rolling_mean_feature(series: List[DemandRecord], window: int = 3) -> 
 
 def build_feature_rows_for_series(
     series: List[DemandRecord],
-    lag_steps: List[int] = [1, 2],
-    rolling_windows: List[int] = [3],
+    lag_steps: Optional[List[int]] = None,
+    rolling_windows: Optional[List[int]] = None,
 ) -> List[ForecastFeatureRow]:
     """
-    Convert one ordered demand series into model-ready feature rows.
+    Convert one ordered demand series into model-ready training rows.
 
     Parameters
     ----------
     series : List[DemandRecord]
-        Time-ordered demand history for one sku-location pair
+        Time-ordered demand history for one SKU-location pair
 
-    lag_steps : List[int]
+    lag_steps : Optional[List[int]]
         Lag offsets to include, e.g. [1, 2, 7]
 
-    rolling_windows : List[int]
+    rolling_windows : Optional[List[int]]
         Rolling mean window sizes to include, e.g. [3, 7]
 
     Returns
     -------
     List[ForecastFeatureRow]
     """
+
+    lag_steps = lag_steps or [1, 2]
+    rolling_windows = rolling_windows or [3]
 
     rows: List[ForecastFeatureRow] = []
 
@@ -90,11 +103,9 @@ def build_feature_rows_for_series(
         current = series[i]
         feature_dict: Dict[str, float] = {}
 
-        # dynamic lag features
         for lag in lag_steps:
             feature_dict[f"lag_{lag}"] = float(series[i - lag].demand)
 
-        # dynamic rolling mean features
         for window in rolling_windows:
             history = [series[j].demand for j in range(i - window, i)]
             feature_dict[f"rolling_mean_{window}"] = float(sum(history) / window)
@@ -114,8 +125,8 @@ def build_feature_rows_for_series(
 
 def build_feature_rows_for_dataset(
     dataset: DemandDataset,
-    lag_steps: List[int] = [1, 2],
-    rolling_windows: List[int] = [3],
+    lag_steps: Optional[List[int]] = None,
+    rolling_windows: Optional[List[int]] = None,
 ) -> List[ForecastFeatureRow]:
     """
     Build model-ready feature rows across the full dataset.
@@ -126,11 +137,14 @@ def build_feature_rows_for_dataset(
 
     from .data import split_into_series
 
+    lag_steps = lag_steps or [1, 2]
+    rolling_windows = rolling_windows or [3]
+
     all_rows: List[ForecastFeatureRow] = []
 
     series_map = split_into_series(dataset)
 
-    for _, series in series_map.items():
+    for series in series_map.values():
         series_rows = build_feature_rows_for_series(
             series=series,
             lag_steps=lag_steps,
@@ -143,7 +157,7 @@ def build_feature_rows_for_dataset(
 
 def feature_rows_to_dataframe(rows: List[ForecastFeatureRow]) -> pd.DataFrame:
     """
-    Convert feature row dataclasses into a flat pandas DataFrame.
+    Convert training feature rows into a flat pandas DataFrame.
     """
 
     flattened_rows = []
@@ -163,12 +177,15 @@ def feature_rows_to_dataframe(rows: List[ForecastFeatureRow]) -> pd.DataFrame:
 
 def build_prediction_row_for_series(
     series: List[DemandRecord],
-    lag_steps: List[int] = [1, 2],
-    rolling_windows: List[int] = [3],
+    lag_steps: Optional[List[int]] = None,
+    rolling_windows: Optional[List[int]] = None,
 ) -> ForecastPredictionRow:
     """
     Build one prediction feature row for the next time step of a single series.
     """
+
+    lag_steps = lag_steps or [1, 2]
+    rolling_windows = rolling_windows or [3]
 
     if not series:
         raise ValueError("Series is empty.")
