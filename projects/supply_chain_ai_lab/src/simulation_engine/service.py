@@ -1,16 +1,13 @@
-from copy import deepcopy
+from dataclasses import replace
 from typing import List
 
+from decision_coordinator.schemas import DecisionCoordinatorInput
+from decision_coordinator.service import run_supply_chain_decision
 from simulation_engine.schemas import (
+    Scenario,
+    ScenarioResult,
     SimulationInput,
     SimulationResult,
-    ScenarioResult,
-    Scenario,
-)
-
-from decision_coordinator.service import run_supply_chain_decision
-from decision_coordinator.schemas import (
-    DecisionCoordinatorInput,
 )
 
 
@@ -19,51 +16,95 @@ def _apply_scenario_modifications(
     scenario: Scenario,
 ) -> DecisionCoordinatorInput:
     """
-    Applies scenario adjustments to a copy of the baseline input.
+    Apply deterministic scenario adjustments by creating updated copies
+    of frozen tool-input dataclasses.
 
-    For V1 we keep the modifications simple and deterministic.
+    The simulation layer modifies the actual tool inputs that drive the
+    downstream decision flow.
     """
 
-    simulated_input = deepcopy(baseline_input)
+    forecast_input = baseline_input.forecast_input
+    inventory_input = baseline_input.inventory_input
+    replenishment_tool_input = baseline_input.replenishment_input
+    replenishment_input = replenishment_tool_input.replenishment_input
 
-    # --- Modify forecast demand assumptions if needed ---
+    # -------------------------------------------------------------
+    # Demand shock
+    # -------------------------------------------------------------
     if scenario.demand_multiplier != 1.0:
-        try:
-            simulated_input.forecast_input.demand_multiplier *= scenario.demand_multiplier
-        except AttributeError:
-            pass
+        inventory_input = replace(
+            inventory_input,
+            expected_daily_demand=(
+                inventory_input.expected_daily_demand * scenario.demand_multiplier
+            ),
+        )
 
-    # --- Modify lead time assumptions ---
+        replenishment_input = replace(
+            replenishment_input,
+            expected_daily_demand=(
+                replenishment_input.expected_daily_demand * scenario.demand_multiplier
+            ),
+        )
+
+    # -------------------------------------------------------------
+    # Lead time shock
+    # -------------------------------------------------------------
     if scenario.lead_time_multiplier != 1.0:
-        try:
-            simulated_input.replenishment_input.lead_time_days = int(
-                simulated_input.replenishment_input.lead_time_days
-                * scenario.lead_time_multiplier
-            )
-        except AttributeError:
-            pass
+        inventory_input = replace(
+            inventory_input,
+            lead_time_days=int(
+                inventory_input.lead_time_days * scenario.lead_time_multiplier
+            ),
+        )
 
-    # --- Modify inventory assumptions ---
+        replenishment_input = replace(
+            replenishment_input,
+            lead_time_days=int(
+                replenishment_input.lead_time_days * scenario.lead_time_multiplier
+            ),
+        )
+
+    # -------------------------------------------------------------
+    # Inventory shock
+    # -------------------------------------------------------------
     if scenario.inventory_multiplier != 1.0:
-        try:
-            simulated_input.inventory_input.inventory_multiplier *= scenario.inventory_multiplier
-        except AttributeError:
-            pass
+        updated_record = replace(
+            inventory_input.record,
+            on_hand=inventory_input.record.on_hand * scenario.inventory_multiplier,
+        )
+
+        inventory_input = replace(
+            inventory_input,
+            record=updated_record,
+        )
+
+        replenishment_input = replace(
+            replenishment_input,
+            inventory_position=(
+                replenishment_input.inventory_position * scenario.inventory_multiplier
+            ),
+        )
+
+    updated_replenishment_tool_input = replace(
+        replenishment_tool_input,
+        replenishment_input=replenishment_input,
+    )
+
+    simulated_input = replace(
+        baseline_input,
+        forecast_input=forecast_input,
+        inventory_input=inventory_input,
+        replenishment_input=updated_replenishment_tool_input,
+    )
 
     return simulated_input
 
 
 def run_simulation(simulation_input: SimulationInput) -> SimulationResult:
     """
-    Executes a full simulation run.
-
-    Steps:
-    1. Run baseline decision pipeline
-    2. Run each scenario variation
-    3. Collect results
+    Execute a baseline run plus all scenario runs.
     """
 
-    # --- Baseline run ---
     baseline_result = run_supply_chain_decision(
         simulation_input.baseline_input
     )
@@ -71,7 +112,6 @@ def run_simulation(simulation_input: SimulationInput) -> SimulationResult:
     scenario_results: List[ScenarioResult] = []
 
     for scenario in simulation_input.scenarios:
-
         simulated_input = _apply_scenario_modifications(
             simulation_input.baseline_input,
             scenario,
