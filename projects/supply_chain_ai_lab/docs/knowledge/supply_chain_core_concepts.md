@@ -2,21 +2,43 @@
 
 This document summarizes the **most important concepts in retail supply chains**.
 
-It serves as a **review sheet for interviews and system design discussions**.
+It is designed as a **mental reference sheet for system design discussions, interviews, and architecture reasoning**.
+
+The Supply Chain AI Lab models these concepts through modules such as forecasting, inventory evaluation, replenishment policies, simulation, disruption modeling, allocation decisions, and monitoring.
 
 ---
 
 # The Retail Supply Chain Flow
 
-A typical retail supply chain has three main stages:
+A typical retail supply chain has three operational stages:
 
-1. **Supplier → Distribution Center (DC)**
-2. **Distribution Center → Store**
-3. **Store → Customer**
+Supplier → Distribution Center → Store → Customer
 
-Products move through this network while demand information flows in the opposite direction.
+Products move **downstream** through this network while demand information flows **upstream**.
 
-Customer purchases generate signals that propagate upstream through the supply chain.
+Customer purchases generate signals that propagate upstream through the supply chain, influencing forecasting, replenishment, and inventory planning decisions.
+
+Mental Hook:
+
+Products flow **downstream**, information flows **upstream**.
+
+---
+
+# Core Supply Chain Dimensions
+
+Most supply chain systems organize data around three fundamental dimensions:
+
+SKU × Location × Time
+
+These dimensions describe:
+
+- what product is involved
+- where it exists in the network
+- when an event occurs
+
+Mental Hook:
+
+Every supply chain decision ultimately depends on **SKU × Location × Time**.
 
 ---
 
@@ -24,67 +46,92 @@ Customer purchases generate signals that propagate upstream through the supply c
 
 ## SKU (Stock Keeping Unit)
 
-A SKU represents a unique product.
+A SKU represents a **unique product** sold by the retailer.
 
-Examples:
+Examples include:
 
-- Coke 12oz can
-- Nike Air Max size 10
-- iPhone 14 128GB Black
+- Coke 12oz can  
+- Nike Air Max size 10  
+- iPhone 14 128GB Black  
 
 Each SKU has its own:
 
 - demand pattern
 - lead time
-- inventory policy
+- replenishment policy
+- inventory dynamics
+
+Mental Hook:
+
+A SKU represents **what product is being managed**.
 
 ---
 
 ## Store
 
-A retail location where customers buy products.
+A store is a retail location where customers purchase products.
 
 Stores have:
 
-- demand patterns
+- customer demand
 - limited shelf space
-- inventory constraints
+- local demand patterns
+- store-specific promotions
 
 Demand is typically modeled at the **SKU × store × time level**.
+
+Mental Hook:
+
+Stores represent **demand points in the network**.
 
 ---
 
 ## Distribution Center (Warehouse)
 
-A warehouse that supplies multiple stores.
+A distribution center supplies inventory to multiple stores.
 
-Functions include:
+Key responsibilities include:
 
 - storing inventory
 - replenishing stores
 - consolidating shipments
-- balancing inventory across the network
+- redistributing inventory across the network
+
+Distribution centers act as **buffers that absorb supply and demand variability**.
+
+Mental Hook:
+
+Warehouses act as **inventory buffers and distribution hubs**.
 
 ---
 
-# Core Supply Chain Problems
+# Core Supply Chain Decision Problems
+
+Modern supply chain planning systems must solve several core problems.
+
+---
 
 ## Demand Forecasting
 
 Demand forecasting predicts how much of each SKU will be sold in the future.
 
-Typical forecasting horizon:
+Typical forecasting horizons include:
 
 - daily
 - weekly
+- multi-week planning horizons
 
-Forecasts drive almost all other decisions.
+Forecasts drive almost all downstream decisions such as:
 
-Examples:
+- replenishment orders
+- safety stock levels
+- allocation planning
 
-- how much inventory to order
-- how much inventory to allocate
-- how much safety stock is needed
+Mental Hook:
+
+Forecasting answers the question:
+
+What demand should we expect?
 
 ---
 
@@ -92,113 +139,177 @@ Examples:
 
 Inventory management determines:
 
-- how much stock to keep
-- when to reorder products
-- how to balance service level and cost
+- how much stock should be held
+- how inventory risk should be monitored
+- how service levels should be protected
 
-Key trade-off:
+A fundamental trade-off exists:
 
-**High inventory → high holding cost**
+High inventory → higher holding cost
 
-**Low inventory → stockouts and lost sales**
+Low inventory → higher risk of stockouts
+
+Mental Hook:
+
+Inventory management balances **availability and cost**.
 
 ---
 
 ## Replenishment
 
-Replenishment determines:
+Replenishment determines **when and how much inventory should be ordered**.
 
-**when and how much inventory should be ordered.**
-
-Typical approaches:
+Common replenishment policies include:
 
 - reorder point policies
+- order-up-to policies
 - periodic review systems
-- optimization-based replenishment
+
+A common formula used in practice:
+
+Reorder Point = Lead Time Demand + Safety Stock
+
+Mental Hook:
+
+Replenishment converts **forecast signals into operational actions**.
 
 ---
 
 ## Allocation
 
-Allocation determines how inventory should be distributed across stores.
+Allocation determines how inventory should be distributed across locations when supply is limited.
 
-Examples:
+Examples include:
 
-- how many units of a new product each store receives
-- how to distribute limited inventory during shortages
+- allocating a new product launch across stores
+- distributing limited inventory during shortages
 
 Allocation is important when:
 
 - demand differs across locations
-- inventory supply is limited
+- inventory supply is constrained
+
+Mental Hook:
+
+Allocation answers the question:
+
+Who receives limited inventory first?
 
 ---
 
 ## Transfers
 
-Inventory transfers move products between locations.
+Transfers move inventory between locations within the network.
 
-Examples:
+Examples include:
 
 - store-to-store transfers
 - warehouse-to-warehouse transfers
 
-Transfers help reduce stockouts and balance inventory across the network.
+Transfers help balance inventory and reduce stockouts.
+
+Mental Hook:
+
+Transfers rebalance **inventory across the network**.
 
 ---
 
-## Disruptions
+## Supply Disruptions
 
 Disruptions occur when supply chain operations deviate from plan.
 
-Examples:
+Examples include:
 
 - supplier delays
-- transportation failures
-- sudden demand spikes
-- weather events
+- transportation interruptions
+- demand spikes
+- extreme weather events
 
 Disruption management involves detecting problems and adjusting decisions.
 
+Mental Hook:
+
+Disruptions test the **resilience of the supply chain**.
+
 ---
 
-# Key Metrics
+# Scenario Simulation
 
-Retail supply chains are typically evaluated using metrics such as:
+Because supply chains operate under uncertainty, planners often test policies through simulation.
+
+Simulation explores hypothetical situations such as:
+
+- demand spikes
+- supplier delays
+- inventory shocks
+- promotion events
+
+Simulation allows planners to test whether policies remain effective under changing conditions.
+
+Mental Hook:
+
+Simulation answers the question:
+
+What happens if conditions change?
+
+---
+
+# Key Supply Chain Metrics
+
+Supply chains are evaluated using several core performance metrics.
+
+---
 
 ## Service Level
 
-The probability that demand can be fulfilled without stockouts.
+Service level measures the probability that demand can be fulfilled without stockouts.
 
-Higher service levels require more inventory.
+Higher service levels typically require more inventory.
+
+Mental Hook:
+
+Service level measures **customer fulfillment reliability**.
 
 ---
 
 ## Stockout Rate
 
-The fraction of demand that cannot be fulfilled due to lack of inventory.
+Stockout rate measures the fraction of demand that cannot be fulfilled due to insufficient inventory.
 
 Stockouts reduce revenue and customer satisfaction.
+
+Mental Hook:
+
+Stockouts represent **lost sales opportunities**.
 
 ---
 
 ## Inventory Turnover
 
-Measures how quickly inventory is sold and replaced.
+Inventory turnover measures how quickly inventory is sold and replaced.
 
 Higher turnover indicates more efficient inventory usage.
+
+Mental Hook:
+
+Inventory turnover measures **inventory efficiency**.
 
 ---
 
 ## Holding Cost
 
-Cost of storing inventory over time.
+Holding cost represents the cost of storing inventory over time.
 
-Includes:
+Typical components include:
 
-- storage costs
-- capital costs
+- storage cost
+- capital cost
 - risk of obsolescence
+- insurance
+
+Mental Hook:
+
+Holding cost represents **the price of carrying inventory**.
 
 ---
 
@@ -210,8 +321,10 @@ Most supply chain data science work revolves around:
 - modeling uncertainty
 - optimizing inventory decisions
 - detecting disruptions
-- evaluating policies using simulation
+- evaluating policies through simulation
 
-Understanding these concepts is essential for building realistic supply chain AI systems.
+Understanding these concepts allows data scientists to build **realistic decision systems rather than isolated models**.
 
+Mental Hook:
 
+Supply chain data science combines **prediction, decision policies, and operational monitoring**.

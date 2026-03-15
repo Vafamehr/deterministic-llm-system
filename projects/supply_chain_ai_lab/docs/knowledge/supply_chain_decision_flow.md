@@ -2,198 +2,437 @@
 
 ## Purpose
 
-This document explains the core decision logic that drives the Supply Chain AI Lab.  
-The goal is to understand how a supply chain system moves from **observed demand signals** to **operational replenishment decisions**.
+This document explains the **core operational decision flow** used in the Supply Chain AI Lab.
 
-At a high level, the system follows a simple decision pipeline:
+The goal is to show **how a supply chain system converts demand signals into operational actions**.
 
-Forecast Demand  
-↓  
-Evaluate Inventory State  
-↓  
+In practical supply chain systems, forecasting, inventory monitoring, and replenishment must work together to produce decisions.
+
+At the highest level, the system follows a simple pipeline:
+
+Demand History
+↓
+Forecast Demand
+↓
+Evaluate Inventory State
+↓
+Assess Risk
+↓
 Generate Replenishment Recommendation
 
-This pipeline represents the minimal operational backbone of a supply chain decision system.
+This flow represents the **minimum operational backbone of a modern supply chain decision system**.
 
 ---
 
-## Why This Flow Matters
+# Mental Model of the System
 
-Forecasting alone does not create business value.  
-Value appears when forecasts are combined with inventory visibility and replenishment logic.
+A useful mental hook for remembering the entire system is:
 
-A practical supply chain system must answer questions such as:
+Forecast
+↓
+Inventory
+↓
+Replenishment
 
-- What demand should we expect?
-- Do we have enough inventory?
-- How long will current stock last?
-- Are we at risk of running out?
-- Should we reorder?
-- If we reorder, how much should we order?
+Or in operational language:
 
-The decision flow connects these questions into one operational sequence.
+Predict demand
+↓
+Measure supply
+↓
+Restore balance
+
+Mental Hook:
+
+A supply chain constantly asks one question:
+
+**Will we run out before the next delivery arrives?**
 
 ---
 
-## Step 1 — Forecast Demand
+# Why This Decision Flow Matters
 
-The first step is estimating future demand.
+Forecasting alone does not create business value.
 
-Forecasting uses historical demand records for a specific SKU at a specific location and produces an estimate of future demand over a defined horizon.
+Forecasts become useful only when they are combined with **inventory visibility and replenishment logic**.
+
+A real supply chain system must continuously answer questions such as:
+
+* What demand should we expect?
+* Do we currently have enough inventory?
+* How long will current stock last?
+* Are we at risk of running out?
+* Should we place a new order?
+* If we order, how much should we order?
+
+The decision flow connects these questions into a **structured operational process**.
+
+---
+
+# Step 1 — Forecast Demand
+
+The first step estimates **future demand**.
+
+Demand forecasting uses historical demand observations for a specific product at a specific location and produces an estimate of future demand.
 
 Typical forecasting inputs include:
 
-- historical demand observations
-- lag features (recent demand values)
-- rolling statistics (moving averages or trends)
+* historical demand observations
+* lag features (recent demand values)
+* rolling statistics (moving averages or trends)
+* calendar signals (seasonality or holidays)
 
-Forecasting outputs an expected demand value that becomes an input to downstream decisions.
+Forecasting produces an **expected demand estimate** that drives downstream decisions.
 
-Without this step, inventory decisions would be based only on past observations rather than expected future demand.
+Example forecast output:
 
----
+| sku     | location  | expected_daily_demand |
+| ------- | --------- | --------------------- |
+| milk_1L | store_102 | 20                    |
 
-## Step 2 — Evaluate Inventory State
+Without forecasting, inventory decisions would rely only on past demand rather than expected future demand.
 
-Once expected demand is known, the system evaluates the current inventory position.
+Mental Hook:
 
-Inventory state is determined using operational data such as:
+Forecasting answers the question:
 
-- on-hand inventory
-- on-order inventory
-- reserved inventory
-
-From these values, the system computes metrics such as:
-
-Inventory Position  
-On-hand + On-order − Reserved
-
-Days of Supply  
-Inventory Position ÷ Expected Daily Demand
-
-Stockout Risk  
-A signal indicating whether the current inventory is likely to run out before new supply arrives.
-
-These metrics provide visibility into the current operational situation.
+**How fast will inventory be consumed?**
 
 ---
 
-## Step 3 — Generate Replenishment Recommendation
+# Step 2 — Evaluate Inventory State
 
-The final step is deciding whether replenishment should occur.
+After estimating expected demand, the system evaluates the **current supply state**.
 
-This decision is based on three main inputs:
+Inventory state uses operational data such as:
 
-- expected demand
-- current inventory position
-- supply lead time
+* on-hand inventory
+* on-order inventory
+* reserved inventory
 
-A common replenishment rule uses a **reorder point**.
-
-Reorder Point = Expected Demand During Lead Time + Safety Stock
-
-If inventory position falls below the reorder point, the system recommends placing a new order.
-
-The replenishment output typically includes:
-
-- reorder point
-- reorder decision (true or false)
-- recommended order quantity
-
-This recommendation becomes the operational output of the system.
+From these inputs the system calculates several key metrics.
 
 ---
 
-## The Complete Decision Pipeline
+## Inventory Position
 
-Combining the steps produces the full decision flow:
+Inventory Position represents the **true available supply pipeline**.
 
-Demand History  
-↓  
-Forecast Expected Demand  
-↓  
-Compute Inventory Metrics  
-↓  
-Assess Stock Risk  
-↓  
-Compute Reorder Point  
-↓  
+Formula:
+
+Inventory Position
+= On Hand + On Order − Reserved
+
+Example:
+
+| Metric   | Value |
+| -------- | ----- |
+| On-hand  | 100   |
+| On-order | 40    |
+| Reserved | 10    |
+
+Inventory Position = 130
+
+Inventory position is used instead of raw on-hand inventory because it reflects **all available supply including incoming shipments**.
+
+Mental Hook:
+
+Inventory Position answers:
+
+**How much supply is actually available?**
+
+---
+
+## Days of Supply
+
+Days of Supply estimates **how long the current inventory will last**.
+
+Formula:
+
+Days of Supply = Inventory Position ÷ Expected Daily Demand
+
+Example:
+
+Inventory Position = 130
+Expected Daily Demand = 20
+
+Days of Supply ≈ 6.5 days
+
+This metric gives planners a quick estimate of how long inventory will last if demand continues at the expected rate.
+
+Mental Hook:
+
+Days of Supply answers:
+
+**How many days before we run out?**
+
+---
+
+## Stockout Risk
+
+Stockout risk identifies whether the system may run out of inventory before new supply arrives.
+
+The simplest signal compares:
+
+Days of Supply
+vs
+Lead Time
+
+Rule:
+
+If
+
+Days of Supply < Lead Time
+
+Then stockout risk exists.
+
+Example:
+
+Days of Supply = 6
+Lead Time = 7
+
+Since 6 < 7 → a stockout risk is detected.
+
+Mental Hook:
+
+Stockout risk occurs when **inventory will run out before the next delivery arrives**.
+
+---
+
+# Step 3 — Generate Replenishment Recommendation
+
+The final step determines whether the system should **place a new order**.
+
+Replenishment decisions depend on three inputs:
+
+* expected demand
+* inventory position
+* supplier lead time
+
+A common replenishment strategy uses a **reorder point**.
+
+---
+
+## Reorder Point
+
+The reorder point represents the inventory threshold below which a new order should be placed.
+
+Formula:
+
+Reorder Point = Lead Time Demand + Safety Stock
+
+Example:
+
+Expected Daily Demand = 20
+Lead Time = 7 days
+
+Lead Time Demand = 140
+
+Safety Stock = 40
+
+Reorder Point = 180
+
+Interpretation:
+
+When inventory falls below 180 units, the system recommends placing a new order.
+
+Mental Hook:
+
+The reorder point is the **inventory alarm level**.
+
+---
+
+## Reorder Decision
+
+The system compares the inventory position to the reorder point.
+
+Decision rule:
+
+If Inventory Position < Reorder Point
+→ place order
+
+Example:
+
+Inventory Position = 150
+Reorder Point = 180
+
+150 < 180 → reorder is triggered.
+
+Mental Hook:
+
+Replenishment begins when **supply falls below the safe threshold**.
+
+---
+
+## Order Quantity
+
+Once a reorder is triggered, the system determines **how much to order**.
+
+In this project a simplified gap-based policy is used.
+
+Formula:
+
+Order Quantity = Reorder Point − Inventory Position
+
+Example:
+
+Reorder Point = 180
+Inventory Position = 150
+
+Order Quantity = 30
+
+This restores inventory back to the reorder threshold.
+
+Mental Hook:
+
+Order quantity fills the **inventory gap**.
+
+---
+
+# The Complete Decision Pipeline
+
+Combining the steps produces the full operational decision flow:
+
+Demand History
+↓
+Forecast Expected Demand
+↓
+Compute Inventory Position
+↓
+Calculate Days of Supply
+↓
+Assess Stockout Risk
+↓
+Compute Reorder Point
+↓
 Generate Replenishment Recommendation
 
-This flow represents a minimal but realistic supply chain decision loop.
+This pipeline represents a **minimal but realistic supply chain decision loop**.
+
+Mental Hook:
+
+Forecast → Inventory → Replenish
 
 ---
 
-## Relationship to the Current Project Modules
+# Relationship to the Project Modules
 
-The Supply Chain AI Lab implements this decision flow using three modules:
+The Supply Chain AI Lab implements this decision flow through three core modules.
 
-Demand Forecasting Module  
-Estimates expected demand for a SKU-location series.
+## Demand Forecasting Module
 
-Inventory Module  
-Computes inventory metrics and stock risk signals.
+Responsible for predicting future demand for each SKU-location series.
 
-Replenishment Module  
-Generates reorder decisions and order quantities.
+Output:
 
-These modules form the operational backbone of the system.
+Expected demand estimates.
 
 ---
 
-## Role of the Tool Layer
+## Inventory Module
 
-The Tool Interface Layer exposes this decision pipeline to higher-level system components.
+Responsible for computing operational inventory metrics including:
 
-Instead of calling modules directly, future components interact through tools such as:
+* inventory position
+* days of supply
+* stockout risk
 
-- forecast tool
-- inventory status tool
-- replenishment recommendation tool
-
-This allows scenario engines, coordinators, or agents to execute the decision pipeline in a controlled and modular way.
+This module represents the **state layer of the supply chain system**.
 
 ---
 
-## Mental Model
+## Replenishment Module
 
-A useful mental model is a professional kitchen.
+Responsible for generating supply decisions including:
 
-Forecasting acts like estimating how many customers will arrive.  
-Inventory evaluation checks the ingredients currently available.  
-Replenishment decisions determine whether new ingredients must be ordered.
+* reorder point
+* reorder decision
+* recommended order quantity
 
-Just as a restaurant must anticipate demand and manage ingredients carefully, a supply chain must continuously forecast demand, monitor inventory, and replenish stock.
-
----
-
-## Key Concepts to Remember
-
-Forecast  
-An estimate of future demand based on historical data.
-
-Inventory Position  
-The true available supply once on-order and reserved stock are considered.
-
-Days of Supply  
-How long current inventory will last given expected demand.
-
-Reorder Point  
-The threshold below which a replenishment order should be placed.
-
-Safety Stock  
-Extra inventory held to protect against uncertainty in demand or supply.
+This module converts system signals into **operational supply actions**.
 
 ---
 
-## Summary
+# Role of the Tool Interface Layer
+
+The Tool Interface Layer exposes the decision pipeline to higher-level system components.
+
+Instead of calling modules directly, system components interact through tools such as:
+
+* forecast tool
+* inventory status tool
+* replenishment recommendation tool
+
+Example tool execution flow:
+
+Tool Runner
+↓
+Forecast Tool
+↓
+Inventory Tool
+↓
+Replenishment Tool
+
+This architecture allows higher-level systems such as:
+
+* scenario simulators
+* decision coordinators
+* disruption analyzers
+* LLM-based agents
+
+to execute the supply chain pipeline safely.
+
+Mental Hook:
+
+Tools provide a **controlled interface to operational logic**.
+
+---
+
+# Practical Analogy
+
+A useful analogy is a **restaurant kitchen**.
+
+Forecasting estimates how many customers will arrive.
+
+Inventory checks how many ingredients are currently available.
+
+Replenishment determines whether more ingredients must be ordered from suppliers.
+
+Just as a restaurant must anticipate demand and maintain ingredients, a supply chain must continuously:
+
+forecast demand
+monitor inventory
+replenish supply
+
+---
+
+# Key Concepts to Remember
+
+Forecast
+An estimate of future demand derived from historical data.
+
+Inventory Position
+The true available supply once on-order and reserved inventory are considered.
+
+Days of Supply
+An estimate of how long current inventory will last given expected demand.
+
+Reorder Point
+The inventory threshold below which a new order should be placed.
+
+Safety Stock
+Extra inventory held to protect against uncertainty in demand and supply.
+
+---
+
+# Summary
 
 The supply chain decision flow connects three fundamental activities:
 
-forecasting demand  
-evaluating inventory  
+forecasting demand
+evaluating inventory
 making replenishment decisions
 
-Together these steps create a continuous operational loop that allows organizations to maintain product availability while controlling inventory levels.
+Together these steps create a **continuous operational loop** that allows organizations to maintain product availability while controlling inventory levels.
 
-The Supply Chain AI Lab implements this loop as the foundation for future simulation, disruption analysis, and agent-driven decision systems.
+The Supply Chain AI Lab implements this loop as the **foundation for future simulation engines, disruption analysis systems, and LLM-driven decision support**.

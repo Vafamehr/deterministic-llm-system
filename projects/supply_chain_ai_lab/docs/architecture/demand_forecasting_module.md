@@ -1,8 +1,10 @@
 # Demand Forecasting Module Architecture
 
-The demand forecasting module is organized as a layered system where each layer has a clear responsibility.
+The demand forecasting module predicts **future customer demand for each SKU at each location over time**.
 
-This structure keeps the forecasting pipeline modular, testable, and easy to extend with new models.
+Forecasts serve as the **primary signal that drives all downstream supply chain decisions**, including inventory risk evaluation, replenishment policies, and scenario simulations.
+
+The module follows a layered architecture to keep responsibilities clean and extensible.
 
 Mental structure of the module:
 
@@ -12,11 +14,35 @@ Each layer performs a specific role in the forecasting pipeline.
 
 ---
 
-## Schemas Layer
+# Role of Forecasting in the System
 
-The `schemas` module defines the core data structures used throughout the forecasting system.
+Forecasting is the **first stage of the supply chain decision pipeline**.
 
-Key objects:
+The broader system pipeline is:
+
+Demand Forecasting  
+→ Inventory State Evaluation  
+→ Replenishment Policy  
+→ Simulation Engine  
+→ Disruption Modeling  
+→ Allocation Decisions  
+→ Network Monitoring  
+→ LLM Decision Copilot
+
+Because forecasting sits at the beginning of this chain, its outputs influence every downstream module.
+
+Mental Hook:
+
+Forecasting answers the question:  
+**What demand should we expect?**
+
+---
+
+# Schemas Layer
+
+The `schemas` module defines the structured data interfaces used by the forecasting system.
+
+Key objects include:
 
 - `DemandRecord`
 - `DemandDataset`
@@ -24,17 +50,21 @@ Key objects:
 - `ForecastPredictionRow`
 - `ForecastEvaluationResult`
 
-These dataclasses define the **system contracts**.
+These dataclasses act as **system contracts**.
 
 They ensure that each stage of the pipeline receives well-defined inputs and produces predictable outputs.
 
 This prevents raw dictionaries or unstructured DataFrames from flowing through the system.
 
+Mental Hook:
+
+Schemas define **the language used inside the forecasting system**.
+
 ---
 
-## Data Layer
+# Data Layer
 
-The `data` module organizes raw demand records into usable time series.
+The `data` module organizes raw demand records into structured time series.
 
 Main responsibilities:
 
@@ -51,16 +81,21 @@ DemandDataset
 
 This segmentation step is critical because forecasting features must be computed **within each series independently**.
 
+Mental Hook:
+
+Data preparation converts raw demand logs into **clean time series signals**.
+
 ---
 
-## Feature Engineering Layer
+# Feature Engineering Layer
 
 The `features` module converts demand history into model-ready feature rows.
 
-Typical feature types:
+Typical feature types include:
 
 - lag features (lag_1, lag_2, etc.)
 - rolling statistics (rolling_mean_k)
+- time indicators (optional extensions)
 
 Example pipeline:
 
@@ -75,19 +110,24 @@ Feature rows contain:
 - engineered features
 - target demand value
 
-These rows are then converted into a tabular dataset for machine learning.
+These rows are then converted into a tabular dataset for machine learning models.
+
+Mental Hook:
+
+Feature engineering transforms **raw demand history into predictive signals**.
 
 ---
 
-## Model Layer
+# Model Layer
 
 The `model` module contains forecasting models and training logic.
 
-Implemented models include:
+Possible models include:
 
 - naive forecast baseline
 - linear regression
 - tree-based models such as XGBoost
+- future extensions (deep learning or hierarchical models)
 
 Model responsibilities:
 
@@ -98,42 +138,51 @@ Example flow:
 
 Feature rows  
 → feature_rows_to_dataframe  
-→ train_linear_regression_model  
+→ train_model  
 → predict_with_model
 
-This layer is intentionally modular so additional forecasting models can be added later.
+The model layer remains modular so additional models can be added without affecting the rest of the pipeline.
+
+Mental Hook:
+
+Models convert **signals into demand predictions**.
 
 ---
 
-## Evaluation Layer
+# Evaluation Layer
 
 The `evaluate` module measures forecasting performance.
 
-Key responsibilities:
+Key responsibilities include:
 
-- compute forecast error metrics
-- evaluate forecasts on a single series
-- evaluate forecasts across many series
-- support rolling backtesting
-- support train/test horizon evaluation
+- computing forecast error metrics
+- evaluating forecasts on a single series
+- evaluating forecasts across many series
+- supporting rolling backtesting
+- supporting train/test horizon evaluation
 
-Primary metric used in the current system:
+Primary metric currently used:
 
-**Mean Absolute Error (MAE)**
+Mean Absolute Error (MAE)
 
 Evaluation can operate at several levels:
 
 - single time series
 - dataset-level aggregation
-- train/test forecasting experiments
+- forecasting experiments across horizons
+
+Mental Hook:
+
+Evaluation answers the question:  
+**How reliable are our forecasts?**
 
 ---
 
-## Service Layer
+# Service Layer
 
-The `service` module provides the **external interface** for the forecasting system.
+The `service` module provides the **external interface for the forecasting system**.
 
-Other modules in the Supply Chain AI Lab should interact with forecasting only through these service functions.
+Other modules should interact with forecasting only through these service functions.
 
 Examples:
 
@@ -142,19 +191,23 @@ Examples:
 
 Example usage:
 
-series → model → next step forecast
+series → model → next-step forecast
 
 or
 
-series → model → multi-step horizon forecast
+series → model → multi-step forecast horizon
 
-The service layer hides the internal feature engineering and model details from the rest of the system.
+The service layer hides internal implementation details such as feature engineering and model selection.
+
+Mental Hook:
+
+Service functions expose **forecasting as a clean system capability**.
 
 ---
 
-## Recursive Multi-Step Forecasting
+# Recursive Multi-Step Forecasting
 
-The module supports multi-step forecasting through **recursive prediction**.
+The module supports multi-step forecasting using **recursive prediction**.
 
 Process:
 
@@ -166,42 +219,40 @@ Process:
 Example flow:
 
 history  
-↓  
-predict t+1  
-↓  
-append prediction  
-↓  
-predict t+2  
-↓  
-repeat until horizon reached
+→ predict t+1  
+→ append prediction  
+→ recompute features  
+→ predict t+2  
+→ repeat until forecast horizon is reached
 
-This approach allows simple one-step models to generate forecasts for longer horizons.
+This allows simple one-step models to generate longer-horizon forecasts.
+
+Mental Hook:
+
+Recursive forecasting extends **short-term prediction models into multi-period forecasts**.
 
 ---
 
-## Full Forecasting Pipeline
+# Full Forecasting Pipeline
 
-The complete demand forecasting pipeline in this project follows the structure below:
+The complete forecasting pipeline follows the structure below:
 
 DemandDataset  
-↓  
-split_into_series  
-↓  
-feature generation  
-↓  
-training table  
-↓  
-model training  
-↓  
-prediction rows  
-↓  
-forecast generation  
-↓  
-evaluation  
+→ split_into_series  
+→ feature generation  
+→ training table  
+→ model training  
+→ prediction rows  
+→ forecast generation  
+→ evaluation
 
 This modular pipeline makes the forecasting system:
 
 - easier to debug
 - easier to extend with new models
+- easier to test
 - easier to explain in interviews
-- closer to real production forecasting architectures
+
+Mental Hook:
+
+Forecasting transforms **historical demand data into future demand signals** that drive the rest of the supply chain system.

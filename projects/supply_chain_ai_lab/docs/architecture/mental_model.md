@@ -1,10 +1,10 @@
 # Mental Model — The Restaurant Network Analogy
 
-To understand the Supply Chain AI Lab, imagine operating a **large restaurant chain**.
+To understand the Supply Chain AI Lab, imagine operating a **large restaurant network**.
 
 Each restaurant must run smoothly while sharing ingredients, suppliers, and logistics across the network.
 
-This analogy provides an intuitive way to understand how modern retail supply chains operate.
+This analogy provides an intuitive mental framework for understanding how modern retail supply chains operate.
 
 ---
 
@@ -12,15 +12,15 @@ This analogy provides an intuitive way to understand how modern retail supply ch
 
 Imagine a company operating **100 restaurants across the country**.
 
-Each restaurant must constantly make decisions such as:
+Each restaurant constantly needs to answer operational questions such as:
 
 - how many meals will be ordered tomorrow
 - how many ingredients must be stocked
-- when to reorder ingredients
-- whether ingredients should be transferred between locations
-- how to respond when a supplier fails
+- when ingredients must be reordered
+- whether ingredients should be transferred between restaurants
+- how to react when suppliers fail or deliveries are delayed
 
-Retail supply chains operate in exactly the same way, except the products are retail goods instead of meals.
+Retail supply chains operate in the same way, except the products are retail goods rather than meals.
 
 ---
 
@@ -30,7 +30,7 @@ Retail supply chains operate in exactly the same way, except the products are re
 |---|---|
 | SKU | Ingredient |
 | Store | Restaurant |
-| Warehouse | Central kitchen |
+| Distribution Center | Central kitchen |
 | Demand | Customer orders |
 | Forecast | Predicting tomorrow's orders |
 | Inventory | Ingredients in the fridge |
@@ -40,92 +40,191 @@ Retail supply chains operate in exactly the same way, except the products are re
 | Stockout | Running out of ingredients |
 | Service Level | Customers receive what they ordered |
 
+This analogy helps visualize how supply chain planning decisions operate across a network.
+
 ---
 
 # Where Machine Learning Fits
 
-Machine learning helps answer demand-related questions such as:
+Machine learning primarily supports **demand understanding**.
+
+Examples of ML-driven questions:
 
 - How many burgers will customers order tomorrow?
-- Which restaurants are likely to run out of tomatoes?
+- Which restaurants will experience higher demand next week?
 - How will a promotion affect demand?
 
-This problem is known as **Demand Forecasting**, which forms the foundation of many supply chain decisions.
+These questions belong to the **Demand Forecasting layer**, which provides signals used by downstream planning systems.
+
+Mental Hook:
+
+Machine learning predicts **what customers will want**.
+
+---
+
+# Where Inventory Logic Fits
+
+After predicting demand, the system must evaluate the **current inventory state**.
+
+Operational questions include:
+
+- Do we have enough tomatoes for tomorrow?
+- Which restaurants are close to running out of ingredients?
+- How long will current inventory last?
+
+This corresponds to the **Inventory State layer** of the system.
+
+Mental Hook:
+
+Inventory represents the **current reality of the supply chain**.
+
+---
+
+# Where Replenishment Fits
+
+Once demand and inventory are known, the system must decide **what actions to take**.
+
+Typical decisions include:
+
+- reorder ingredients
+- increase safety stock
+- adjust ordering quantities
+
+This corresponds to the **Replenishment Policy layer**.
+
+Mental Hook:
+
+Replenishment converts **signals into operational actions**.
 
 ---
 
 # Where Simulation Fits
 
-Forecasts are never perfect. Simulation helps answer:
+Forecasts and policies are built on assumptions.
 
-> What happens if our predictions are wrong?
-
-Examples:
-
-- Will we run out of chicken next week?
-- Will we waste too many ingredients?
-- What if demand suddenly spikes?
-
-Simulation allows the system to evaluate **what-if scenarios** before real decisions are implemented.
-
----
-
-# Where Decision Logic Fits
-
-Decision logic determines how the system responds to forecasts and simulations.
+Simulation helps test those assumptions by exploring possible futures.
 
 Examples include:
 
-- reorder inventory
-- transfer inventory between locations
-- adjust safety stock levels
+- demand spikes during promotions
+- sudden increases in customer traffic
+- supplier delivery delays
+- unexpected inventory losses
 
-These decisions may be based on:
+Simulation answers the question:
 
-- simple rules
-- heuristics
-- optimization models
-- machine-learning-assisted policies
+"What happens if conditions change?"
+
+Mental Hook:
+
+Simulation is the **supply chain laboratory** where policies are stress-tested.
+
+---
+
+# Where Disruption Modeling Fits
+
+Real supply chains rarely operate under perfectly stable conditions.
+
+Disruptions may include:
+
+- supplier delays
+- transportation failures
+- manufacturing issues
+- sudden demand spikes
+
+Disruption modeling evaluates how these events affect the system.
+
+Mental Hook:
+
+Disruption modeling tests whether the supply chain is **resilient to uncertainty**.
+
+---
+
+# Where Allocation Fits
+
+Sometimes the network does not have enough inventory to satisfy all locations.
+
+For example:
+
+- a central warehouse has limited ingredients
+- multiple restaurants require the same supplies
+
+The system must decide **which locations receive priority**.
+
+Mental Hook:
+
+Allocation answers the question:
+
+"Who receives limited inventory first?"
+
+---
+
+# Where Monitoring Fits
+
+Supply chain operators must monitor the health of the entire system.
+
+Typical operational metrics include:
+
+- service level
+- fill rate
+- forecast accuracy
+- stockout rate
+- inventory turnover
+
+This monitoring layer acts as the **control tower** of the system.
+
+Mental Hook:
+
+Monitoring answers the question:
+
+"Is the supply chain operating safely?"
 
 ---
 
 # Where LLMs Fit
 
-Large Language Models do not replace forecasting or optimization.
+Large Language Models do not replace operational models.
 
-Instead, they help interpret and explain the system.
+Instead they interpret and explain the system.
 
 Examples include:
 
 - explaining forecast changes
 - summarizing disruptions
-- comparing operational scenarios
-- assisting planners in making decisions
+- comparing scenario outcomes
+- generating decision-support summaries
 
 Example explanation:
 
-> "Three stores are projected to run out of chicken by Friday due to increased demand and delayed supplier shipments."
+"Three restaurants are projected to run out of chicken by Friday due to increased demand and delayed supplier deliveries."
+
+Mental Hook:
+
+LLMs act as the **Supply Chain Decision Copilot**.
 
 ---
 
 # The Goal of the Supply Chain AI Lab
 
-The Supply Chain AI Lab simulates this restaurant-style network.
+The Supply Chain AI Lab simulates a realistic supply chain decision platform.
 
 The system combines:
 
 - machine learning
-- simulation
-- operational decision policies
+- inventory logic
+- replenishment policies
+- scenario simulation
+- disruption modeling
+- network monitoring
 - LLM reasoning
 
-to create a realistic AI-powered supply chain decision environment.
+This creates a structured environment for experimenting with modern AI-powered supply chain decision systems.
 
 ---
 
-# Three Operational Layers of Retail Supply Chains
+# Four Operational Layers of Supply Chain Intelligence
 
-Retail supply chains can be understood through three interacting layers.
+Supply chains can be understood through four interacting layers.
 
 ---
 
@@ -133,7 +232,7 @@ Retail supply chains can be understood through three interacting layers.
 
 This layer answers:
 
-**What will customers buy?**
+"What will customers buy?"
 
 Typical problems include:
 
@@ -146,44 +245,60 @@ Machine learning is heavily used in this layer.
 
 ---
 
-## 2. Inventory and Flow Layer
+## 2. Inventory Layer
 
 This layer answers:
 
-**Where should products be and when?**
+"What inventory do we currently have and how safe is it?"
+
+Typical problems include:
+
+- inventory position evaluation
+- safety stock calculations
+- stockout risk estimation
+
+---
+
+## 3. Decision Layer
+
+This layer answers:
+
+"What operational decisions should we make?"
 
 Typical problems include:
 
 - replenishment planning
-- safety stock calculations
 - inventory allocation
-- store transfers
-- warehouse distribution
-
-This layer often combines:
-
-- forecasts
-- rules and heuristics
-- optimization methods
+- network balancing
 
 ---
 
-## 3. Disruption and Decision Layer
+## 4. Scenario & Resilience Layer
 
 This layer answers:
 
-**What should we do when reality deviates from plan?**
+"What happens if conditions change?"
 
 Examples include:
 
-- supplier delays
 - demand spikes
-- inventory shortages
+- supplier disruptions
 - logistics failures
+- inventory shocks
 
-This layer benefits from:
+Simulation and disruption modeling are heavily used in this layer.
 
-- simulation
-- scenario analysis
-- LLM reasoning
-- human decision support
+---
+
+# Final Mental Model
+
+The Supply Chain AI Lab follows a simple decision logic:
+
+Predict demand  
+Evaluate inventory health  
+Decide replenishment actions  
+Stress test decisions with simulation  
+Manage disruptions and supply risk  
+Allocate scarce inventory across the network  
+Monitor system performance  
+Explain outcomes with LLM reasoning

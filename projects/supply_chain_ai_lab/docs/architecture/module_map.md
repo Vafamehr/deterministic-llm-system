@@ -4,31 +4,63 @@ This document defines the major modules of the **Supply Chain AI Lab**.
 
 The lab is designed as a **modular retail supply chain AI system**, where each module solves a specific business problem while sharing common data, simulation, and reasoning layers.
 
+The system evolves from a deterministic operational backbone toward an explainable AI decision platform.
+
 ---
 
-# Foundational Modules
+# Foundational Operational Modules
 
-These modules form the backbone of the system.
+These modules form the **core operational decision backbone** of the supply chain system.
 
 ## 1. Demand Forecasting
 
 Purpose:
 
-Predict future demand at the **SKU × store × time** level.
+Predict future demand at the **SKU × location × time** level.
 
 Why it matters:
 
-Demand forecasting is the foundation of most downstream supply chain decisions.
+Demand forecasting generates the future signal that drives downstream supply chain planning decisions.
 
 Typical outputs:
 
-- next-period demand forecasts
-- forecast uncertainty estimates
+- demand forecasts
+- forecast accuracy metrics
 - demand trend summaries
+- demand volatility indicators
+
+Mental Hook:
+
+Forecasting answers the question:  
+**What demand should we expect?**
 
 ---
 
-## 2. Inventory and Replenishment
+## 2. Inventory State
+
+Purpose:
+
+Represent the **current health of inventory across the network**.
+
+Why it matters:
+
+Before any planning decisions can be made, the system must understand the current inventory situation.
+
+Typical outputs:
+
+- inventory position
+- days of supply
+- stockout risk indicators
+- service level estimates
+
+Mental Hook:
+
+Inventory answers the question:  
+**What is our current supply risk?**
+
+---
+
+## 3. Replenishment Policy
 
 Purpose:
 
@@ -36,118 +68,224 @@ Determine **when and how much inventory should be replenished**.
 
 Why it matters:
 
-This module converts demand expectations into operational inventory decisions.
+Replenishment converts demand expectations and inventory state into operational ordering decisions.
 
 Typical outputs:
 
-- reorder recommendations
-- safety stock calculations
-- stockout risk indicators
+- reorder point calculations
+- recommended order quantities
+- safety stock estimates
+- replenishment alerts
+
+Mental Hook:
+
+Replenishment answers the question:  
+**What action should we take now?**
 
 ---
 
-## 3. Inventory Simulation
+# Scenario and Risk Modules
+
+These modules evaluate how the system behaves under uncertainty.
+
+## 4. Simulation Engine
 
 Purpose:
 
-Simulate how inventory evolves over time under demand, lead times, and replenishment rules.
+Run supply chain scenarios by executing the decision pipeline under different conditions.
 
-Why it matters:
+Examples:
 
-Simulation allows the system to **test policies and evaluate outcomes before real deployment**.
+- demand spikes
+- promotion events
+- supplier delays
+- inventory shocks
 
 Typical outputs:
 
-- inventory trajectories
-- stockout events
-- service level estimates
-- cost metrics
+- scenario comparisons
+- stockout risk outcomes
+- replenishment impacts
+- service level changes
+
+Mental Hook:
+
+Simulation answers the question:  
+**What happens if conditions change?**
+
+---
+
+## 5. Disruption / Lead Time Risk
+
+Purpose:
+
+Model supply chain disruptions and lead time uncertainty.
+
+Examples:
+
+- supplier delays
+- transportation disruptions
+- port congestion
+- manufacturing interruptions
+
+Typical outputs:
+
+- disruption alerts
+- lead time risk indicators
+- supply reliability summaries
+
+Mental Hook:
+
+Disruption modeling tests whether the system is **resilient to supply uncertainty**.
 
 ---
 
 # Network Decision Modules
 
-These modules operate across multiple locations in the retail network.
+These modules operate across the **entire supply chain network** rather than individual SKU-location pairs.
 
-## 4. Allocation and Transfers
+## 6. Allocation / Inventory Distribution
 
 Purpose:
 
-Determine how limited inventory should be **distributed across stores or moved between locations**.
+Determine how limited inventory should be **distributed across locations** when supply is constrained.
 
 Why it matters:
 
-Demand varies across locations and supply is often constrained.
+Demand often exceeds available inventory, requiring prioritization decisions.
 
 Typical outputs:
 
-- allocation plans
-- transfer recommendations
+- inventory allocation plans
 - shortage balancing decisions
+- location priority rules
+
+Mental Hook:
+
+Allocation answers the question:  
+**Who receives scarce inventory first?**
 
 ---
 
-## 5. Disruption Intelligence
+## 7. Network Metrics / Control Tower
 
 Purpose:
 
-Detect and analyze disruptions that affect normal supply chain operations.
+Monitor overall supply chain performance and operational health.
 
-Examples:
+Typical metrics include:
 
-- supplier delays
-- transportation interruptions
-- demand spikes
-- inventory imbalances
+- fill rate
+- service level
+- stockout rate
+- forecast accuracy
+- inventory turnover
 
 Typical outputs:
 
-- disruption alerts
-- impact summaries
-- scenario-based action suggestions
+- system health dashboards
+- operational alerts
+- network performance summaries
+
+Mental Hook:
+
+The control tower answers the question:  
+**How healthy is the supply chain network?**
 
 ---
 
-# Advanced Business Modules
+# LLM Reasoning Layer
 
-These modules extend the system into broader retail decision problems.
-
-## 6. Assortment Optimization
+## 8. Supply Chain Decision Copilot
 
 Purpose:
 
-Determine **which products should be stocked at which stores**.
+Use LLM reasoning to interpret deterministic system outputs and assist planners.
 
-Why it matters:
-
-Not every store should carry every SKU.
-
-Typical outputs:
-
-- assortment recommendations
-- low-performing SKU alerts
-- store-specific product mix suggestions
-
----
-
-## 7. Recommendation-Based Decision Support
-
-Purpose:
-
-Use AI and LLM-based reasoning to assist planners and operators in making decisions.
+The LLM does not replace planning logic.  
+It provides **explanations, summaries, and insights**.
 
 Examples:
 
 - explaining forecast changes
 - summarizing disruption causes
-- comparing policy outcomes
-- recommending next actions
+- comparing scenario outcomes
+- generating operational narratives
 
 Typical outputs:
 
 - operational summaries
-- scenario comparisons
+- scenario explanations
 - decision-support narratives
+
+Mental Hook:
+
+The LLM layer answers the question:  
+**Why did the system make this decision?**
+
+---
+
+# Optional Advanced Extensions
+
+These modules extend the platform but are not required for the core system.
+
+## Assortment Optimization
+
+Purpose:
+
+Determine which products should be stocked at each store.
+
+Mental Hook:
+
+Right product in the right store.
+
+---
+
+## Substitution Recommendation
+
+Purpose:
+
+Recommend alternative products when items are unavailable.
+
+Mental Hook:
+
+What should replace an out-of-stock item?
+
+---
+
+## Promotion Optimization
+
+Purpose:
+
+Determine which products should be promoted and when.
+
+Mental Hook:
+
+Promotions intentionally shape demand.
+
+---
+
+## Pricing Optimization
+
+Purpose:
+
+Adjust prices to balance demand and inventory.
+
+Mental Hook:
+
+Price influences demand behavior.
+
+---
+
+## Supplier Intelligence
+
+Purpose:
+
+Evaluate supplier reliability and risk exposure.
+
+Mental Hook:
+
+Not all suppliers perform equally.
 
 ---
 
@@ -159,13 +297,12 @@ Shared layers include:
 
 - retail data model
 - feature pipelines
+- deterministic decision logic
 - simulation engine
 - evaluation framework
-- deterministic decision logic
 - LLM reasoning layer
-- bounded agent orchestration
 
-These layers ensure consistency and allow modules to interact with the same underlying data and logic.
+These layers ensure that modules interact with the same underlying data and decision structures.
 
 ---
 
@@ -173,12 +310,13 @@ These layers ensure consistency and allow modules to interact with the same unde
 
 The recommended implementation order for the Supply Chain AI Lab is:
 
-1. demand forecasting
-2. inventory simulation
-3. inventory and replenishment
-4. allocation and transfers
-5. disruption intelligence
-6. assortment optimization
-7. recommendation-based decision support
+1. demand forecasting  
+2. inventory state  
+3. replenishment policy  
+4. simulation engine  
+5. disruption / lead time risk  
+6. allocation / inventory distribution  
+7. network metrics / control tower  
+8. LLM decision copilot  
 
-This order ensures that later modules build on strong analytical foundations.
+This sequence builds a **realistic supply chain decision backbone before adding LLM reasoning**.

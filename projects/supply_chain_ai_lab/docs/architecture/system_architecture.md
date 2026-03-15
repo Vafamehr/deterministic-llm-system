@@ -1,174 +1,294 @@
-# Supply Chain AI Lab — System Architecture
+# Supply Chain AI Lab: System Architecture
 
 ## Purpose
 
 This document describes the **overall architecture of the Supply Chain AI Lab**.
 
-The project simulates how a real retail supply chain AI platform can be structured.  
-Each module represents a component commonly found in production supply chain analytics systems.
+The project simulates how a real **AI-driven retail supply chain decision platform** can be structured.
+
+The system combines:
+
+- demand forecasting
+- inventory state evaluation
+- replenishment policies
+- scenario simulation
+- supply disruption modeling
+- constrained inventory allocation
+- network monitoring
+- LLM reasoning
 
 This file provides a **top-level architectural overview**, while detailed explanations are documented in the other architecture files.
 
 ---
 
-# System Overview
+# System Philosophy
 
-The Supply Chain AI Lab is designed as a **modular system** that mirrors the structure of real-world supply chain AI platforms.
+The Supply Chain AI Lab follows a **deterministic-first architecture**.
 
-The architecture separates responsibilities into several conceptual layers:
+Operational decisions are produced by structured models and policies.  
+LLMs are used only for reasoning, explanation, and interpretation.
 
-- **Domain Layer** — defines the business context and problem space of the system.
-- **Data Layer** — defines how retail demand data is structured and represented.
-- **Feature Layer** — transforms demand history into model-ready signals.
-- **Model Layer** — trains forecasting models and generates predictions.
-- **Service Layer** — exposes forecasting functionality to downstream applications.
+This approach ensures the system remains:
 
-This layered design keeps responsibilities clearly separated and allows each component to evolve independently.
+• transparent  
+• modular  
+• interpretable  
+• reproducible  
+
+The architecture mirrors how modern retail supply chain platforms combine **machine learning, planning logic, and decision monitoring**.
+
+---
+
+# High-Level Architecture Layers
+
+The system is organized into several conceptual layers.
+
+## Domain Layer
+
+Defines the core supply chain concepts used throughout the system.
+
+Examples include:
+
+- SKU
+- location
+- demand
+- inventory
+- replenishment policy
+
+---
+
+## Data & Forecasting Layer
+
+Transforms raw retail demand observations into predictive signals.
+
+Key responsibilities include:
+
+- representing retail demand data
+- segmenting demand into item–location time series
+- generating time-series features
+- producing demand forecasts
+
+---
+
+## Operational Decision Layer
+
+Transforms forecasts and inventory state into operational supply chain actions.
+
+This layer includes:
+
+- inventory evaluation
+- replenishment policy decisions
+
+---
+
+## Scenario & Risk Layer
+
+Evaluates how supply chain policies behave under uncertainty.
+
+This layer introduces:
+
+- simulation experiments
+- disruption scenarios
+- supply risk modeling
+
+---
+
+## Network Decision Layer
+
+Handles decisions that occur across the supply chain network.
+
+Examples include:
+
+- inventory allocation
+- balancing supply across locations
+
+---
+
+## Monitoring Layer
+
+Tracks the health of the supply chain system.
+
+Typical monitoring metrics include:
+
+- fill rate
+- service level
+- stockout risk
+- forecast accuracy
+- inventory turnover
+
+---
+
+## Reasoning Layer
+
+The final layer uses LLMs to interpret system outputs.
+
+Examples include:
+
+- explaining supply chain decisions
+- summarizing scenario outcomes
+- identifying operational risks
+
+---
+
+# Core Decision Pipeline
+
+At the heart of the system is the **supply chain decision pipeline**.
+
+
+Demand Forecasting
+↓
+Inventory State Evaluation
+↓
+Replenishment Policy
+↓
+Simulation Engine
+↓
+Supply Disruption Modeling
+↓
+Inventory Allocation
+↓
+Network Metrics / Monitoring
+↓
+LLM Decision Copilot
+
+
+Each stage enriches the system's ability to make and interpret operational decisions.
+
+---
+
+# Detailed System Flow
+
+The system can also be viewed as a flow of information and decisions.
+
+
+Retail Data Sources
+(sales, inventory, shipments, promotions)
+│
+▼
+Retail Data Model
+(SKU × Location × Time)
+│
+▼
+Demand Forecasting
+(predict future demand)
+│
+▼
+Inventory State
+(current stock health)
+│
+▼
+Replenishment Policy
+(ordering decisions)
+│
+▼
+Simulation Engine
+(scenario experimentation)
+│
+▼
+Supply Disruption Modeling
+(lead time / supply risk)
+│
+▼
+Allocation Engine
+(network inventory balancing)
+│
+▼
+Network Metrics
+(system monitoring)
+│
+▼
+LLM Decision Copilot
+(reasoning and explanation)
+
+
+This structure allows the platform to combine:
+
+- machine learning
+- supply chain planning logic
+- scenario simulation
+- network monitoring
+- LLM reasoning
+
+within a unified decision system.
+
+---
+
+# Architectural Principles
+
+## Modular Design
+
+Each module has a clearly defined responsibility and can evolve independently.
+
+---
+
+## Deterministic Decision Core
+
+Operational decisions come from structured models and policies.  
+LLMs interpret decisions rather than generating them.
+
+---
+
+## Scenario-Driven Evaluation
+
+Simulation allows supply chain policies to be evaluated under uncertain conditions.
+
+---
+
+## Clean Dependency Direction
+
+Dependencies flow in a strict direction.
+
+
+simulation_engine
+↓
+decision_coordinator
+↓
+tools
+↓
+domain modules
+
+
+Lower-level modules never depend on higher orchestration layers.
 
 ---
 
 # Architecture Documents
 
-This file acts as the **entry point for the architecture documentation**.
+This document serves as the **entry point for the architecture documentation**.
 
-Detailed explanations of individual components are provided in the following documents:
+Supporting architecture documents include:
 
-- **domain_scope.md** — defines the business problems the lab is designed to address
-- **mental_model.md** — explains the conceptual intuition behind the supply chain system
-- **retail_data_model.md** — describes how retail demand data is structured
-- **module_map.md** — outlines the system modules and their responsibilities
-- **demand_forecasting_module.md** — explains the architecture of the forecasting component
+- **domain_scope.md** — business problems addressed by the system
+- **mental_model.md** — conceptual intuition behind the supply chain system
+- **retail_data_model.md** — retail data representation
+- **module_map.md** — overview of system modules
+- **demand_forecasting_module.md** — forecasting architecture
+- **simulation_engine.md** — scenario simulation architecture
 
-Together, these documents describe the structure and design of the Supply Chain AI Lab.
-
----
-
-# Top-Level Forecasting Pipeline
-
-The forecasting system transforms retail demand data into model-ready inputs through a structured pipeline:
-
-```
-Retail Demand Table
-        ↓
-Demand Records
-        ↓
-Item–Location Series
-        ↓
-Feature Engineering
-        ↓
-Training Feature Tables / Prediction Feature Tables
-```
-
-Each stage progressively converts raw retail observations into structured signals that forecasting models can consume.
+Together these documents describe the structure of the Supply Chain AI Lab.
 
 ---
 
-# System Architecture Diagram
+# Mental Model
 
-The Supply Chain AI Lab can be viewed as a layered analytical system.
+The system answers four fundamental operational questions:
 
-```
-Retail Data Sources
-    (sales, inventory, shipments, promotions)
-                │
-                ▼
-        Retail Data Model
-        (SKU × Location × Time)
-                │
-                ▼
-        Demand Forecasting
-        (feature engineering + models)
-                │
-                ▼
-        Inventory Simulation
-        (simulate inventory dynamics)
-                │
-                ▼
-        Inventory & Replenishment
-        (restocking decisions)
-                │
-                ▼
-        Allocation & Transfers
-        (network inventory balancing)
-                │
-                ▼
-        Disruption Intelligence
-        (detect supply chain anomalies)
-                │
-                ▼
-        Decision Support Layer
-        (LLM reasoning + explanations)
-```
-
-This layered structure allows the system to combine:
-
-- machine learning
-- simulation
-- optimization
-- LLM reasoning
-
-within a unified supply chain decision platform.
-
+1. What demand should we expect?
+2. What inventory risk do we face?
+3. What decisions should we take?
+4. What happens if conditions change?
 
 ---
 
-# Demand Forecasting Pipeline
+# Mental Hook
 
-The demand forecasting subsystem transforms raw retail demand data into model-ready inputs.
+A modern supply chain AI platform follows this logic:
 
-```
-Sales / Demand Table
-        │
-        ▼
-DemandDataset
-        │
-        ▼
-split_into_series
-(group by SKU × Location)
-        │
-        ▼
-Item–Location Time Series
-        │
-        ▼
-Feature Engineering
-(lags, rolling averages)
-        │
-        ▼
-ForecastFeatureRow
-(training rows)
-        │
-        ▼
-Training Feature Table
-(pandas DataFrame)
-```
-
-For prediction, the pipeline generates the next-step feature input:
-
-```
-Latest Demand Series
-        │
-        ▼
-build_prediction_row_for_series
-        │
-        ▼
-ForecastPredictionRow
-        │
-        ▼
-Prediction Feature Table
-(model input)
-```
-
-This pipeline is implemented in the forecasting module:
-
-```
-src/demand_forecasting/
-```
-
-Key components include:
-
-- `schemas.py` — structured data interfaces
-- `data.py` — series segmentation
-- `features.py` — feature generation
-- `model.py` — forecasting models (future)
-- `evaluate.py` — forecast evaluation (future)
-- `service.py` — public interface
+Predict demand  
+→ Evaluate inventory health  
+→ Decide replenishment actions  
+→ Stress test decisions with simulation  
+→ Manage supply disruptions  
+→ Allocate constrained inventory  
+→ Monitor network performance  
+→ Explain outcomes with LLM reasoning
