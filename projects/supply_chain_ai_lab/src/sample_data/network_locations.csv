@@ -1,0 +1,5 @@
+location_id,name,type,region
+wh_1,DFW Warehouse,warehouse,TX
+store_1,Dallas Store,store,TX
+store_2,Austin Store,store,TX
+store_3,Houston Store,store,TX
