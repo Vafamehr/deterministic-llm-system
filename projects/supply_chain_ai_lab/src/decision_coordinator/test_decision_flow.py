@@ -52,12 +52,16 @@ def main() -> None:
     model, _ = run_linear_regression_training(feature_rows)
 
     # -------------------------------
-    # 4. Build forecast tool input
+    # 4. Choose one coherent SKU-location
+    #    from the demand history
     # -------------------------------
     first_row = demand_df.iloc[0]
     sku_id = first_row["sku_id"]
     location_id = first_row["location_id"]
 
+    # -------------------------------
+    # 5. Build forecast tool input
+    # -------------------------------
     forecast_input = build_forecast_tool_input(
         demand_history=demand_df,
         model=model,
@@ -67,35 +71,52 @@ def main() -> None:
     )
 
     # -------------------------------
-    # 5. Build inventory input
+    # 6. Build sample network and find
+    #    matching inventory record
     # -------------------------------
     network = build_sample_network()
 
-    inventory_record = network.inventory[0]
+    matching_inventory_record = next(
+        (
+            record
+            for record in network.inventory
+            if record.sku_id == sku_id and record.location_id == location_id
+        ),
+        None,
+    )
 
+    if matching_inventory_record is None:
+        raise ValueError(
+            f"No inventory record found for sku_id={sku_id}, location_id={location_id}"
+        )
+
+    # -------------------------------
+    # 7. Build inventory input
+    # -------------------------------
     inventory_input = InventoryStatusToolInput(
-        record=inventory_record,
+        record=matching_inventory_record,
         expected_daily_demand=10.0,
         lead_time_days=5,
     )
 
     # -------------------------------
-    # 6. Build replenishment input
+    # 8. Build replenishment input
     # -------------------------------
-
     replenishment_input = ReplenishmentToolInput(
-    replenishment_input=ReplenishmentInput(
-        sku_id=inventory_record.sku_id,
-        location_id=inventory_record.location_id,
-        inventory_position=inventory_record.on_hand + inventory_record.on_order,
-        expected_daily_demand=10.0,
-        lead_time_days=5,
-        safety_stock=20.0,
-    )
+        replenishment_input=ReplenishmentInput(
+            sku_id=matching_inventory_record.sku_id,
+            location_id=matching_inventory_record.location_id,
+            inventory_position=(
+                matching_inventory_record.on_hand + matching_inventory_record.on_order
+            ),
+            expected_daily_demand=10.0,
+            lead_time_days=5,
+            safety_stock=20.0,
+        )
     )
 
     # -------------------------------
-    # 7. Run coordinator
+    # 9. Run coordinator
     # -------------------------------
     decision_input = DecisionCoordinatorInput(
         forecast_input=forecast_input,
@@ -106,7 +127,7 @@ def main() -> None:
     result = run_supply_chain_decision(decision_input)
 
     # -------------------------------
-    # 8. Print results
+    # 10. Print results
     # -------------------------------
     print("\n--- FORECAST ---")
     print(result.forecast_result)
