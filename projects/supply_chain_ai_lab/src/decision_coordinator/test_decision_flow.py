@@ -71,7 +71,23 @@ def main() -> None:
     )
 
     # -------------------------------
-    # 6. Build sample network and find
+    # 6. Derive an aligned demand signal
+    #    from the same SKU-location history
+    # -------------------------------
+    entity_history = demand_df[
+        (demand_df["sku_id"] == sku_id)
+        & (demand_df["location_id"] == location_id)
+    ].copy()
+
+    if entity_history.empty:
+        raise ValueError(
+            f"No demand history found for sku_id={sku_id}, location_id={location_id}"
+        )
+
+    expected_daily_demand = float(entity_history["units_sold"].mean())
+
+    # -------------------------------
+    # 7. Build sample network and find
     #    matching inventory record
     # -------------------------------
     network = build_sample_network()
@@ -91,16 +107,16 @@ def main() -> None:
         )
 
     # -------------------------------
-    # 7. Build inventory input
+    # 8. Build inventory input
     # -------------------------------
     inventory_input = InventoryStatusToolInput(
         record=matching_inventory_record,
-        expected_daily_demand=10.0,
+        expected_daily_demand=expected_daily_demand,
         lead_time_days=5,
     )
 
     # -------------------------------
-    # 8. Build replenishment input
+    # 9. Build replenishment input
     # -------------------------------
     replenishment_input = ReplenishmentToolInput(
         replenishment_input=ReplenishmentInput(
@@ -109,14 +125,14 @@ def main() -> None:
             inventory_position=(
                 matching_inventory_record.on_hand + matching_inventory_record.on_order
             ),
-            expected_daily_demand=10.0,
+            expected_daily_demand=expected_daily_demand,
             lead_time_days=5,
             safety_stock=20.0,
         )
     )
 
     # -------------------------------
-    # 9. Run coordinator
+    # 10. Run coordinator
     # -------------------------------
     decision_input = DecisionCoordinatorInput(
         forecast_input=forecast_input,
@@ -127,7 +143,7 @@ def main() -> None:
     result = run_supply_chain_decision(decision_input)
 
     # -------------------------------
-    # 10. Print results
+    # 11. Print results
     # -------------------------------
     print("\n--- FORECAST ---")
     print(result.forecast_result)
