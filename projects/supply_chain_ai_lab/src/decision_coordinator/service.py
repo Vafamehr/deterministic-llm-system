@@ -1,10 +1,8 @@
 """ 
-
 For now keeps modules loosely coupled,-------->
 reality: forecast → influences inventory expectations
 inventory → influences replenishment quantity
 TODO: later
-
 """
 
 from tools.runner import run_tool
@@ -54,32 +52,57 @@ def run_supply_chain_decision(
         )
     )
 
+    # --- Derive demand signal from forecast ---
+    predicted_values = forecast_output.predicted_values
+    expected_daily_demand = sum(predicted_values) / len(predicted_values)
+
     # --- Step 2: Inventory ---
+    updated_inventory_input = type(decision_input.inventory_input)(
+        record=decision_input.inventory_input.record,
+        expected_daily_demand=expected_daily_demand,
+        lead_time_days=decision_input.inventory_input.lead_time_days,
+    )
+
     inventory_output: InventoryStatusToolOutput = run_tool(
         "inventory_status",
-        decision_input.inventory_input,
+        updated_inventory_input,
     )
 
     execution_trace.append(
         DecisionStepTrace(
             step_name="evaluate_inventory",
             tool_name="inventory_status",
-            input_data=decision_input.inventory_input,
+            input_data=updated_inventory_input,
             output_data=inventory_output,
         )
     )
 
     # --- Step 3: Replenishment ---
+    rep_input = decision_input.replenishment_input.replenishment_input
+
+    updated_rep_input = type(rep_input)(
+        sku_id=rep_input.sku_id,
+        location_id=rep_input.location_id,
+        inventory_position=rep_input.inventory_position,
+        expected_daily_demand=expected_daily_demand,
+        lead_time_days=rep_input.lead_time_days,
+        safety_stock=rep_input.safety_stock,
+    )
+
+    updated_replenishment_tool_input = type(decision_input.replenishment_input)(
+        replenishment_input=updated_rep_input
+    )
+
     replenishment_output: ReplenishmentToolOutput = run_tool(
         "replenishment",
-        decision_input.replenishment_input,
+        updated_replenishment_tool_input,
     )
 
     execution_trace.append(
         DecisionStepTrace(
             step_name="generate_replenishment",
             tool_name="replenishment",
-            input_data=decision_input.replenishment_input,
+            input_data=updated_replenishment_tool_input,
             output_data=replenishment_output,
         )
     )
