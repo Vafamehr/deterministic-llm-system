@@ -3,6 +3,7 @@ from typing import List
 
 from decision_coordinator.schemas import DecisionCoordinatorInput
 from decision_coordinator.service import run_supply_chain_decision
+from scenario_analysis.service import ScenarioAnalysisService
 from simulation_engine.schemas import (
     Scenario,
     ScenarioResult,
@@ -15,58 +16,39 @@ def _apply_scenario_modifications(
     baseline_input: DecisionCoordinatorInput,
     scenario: Scenario,
 ) -> DecisionCoordinatorInput:
-    """
-    Apply deterministic scenario adjustments by creating updated copies
-    of frozen tool-input dataclasses.
-
-    The simulation layer modifies the actual tool inputs that drive the
-    downstream decision flow.
-    """
-
     forecast_input = baseline_input.forecast_input
     inventory_input = baseline_input.inventory_input
     replenishment_tool_input = baseline_input.replenishment_input
     replenishment_input = replenishment_tool_input.replenishment_input
 
-    # -------------------------------------------------------------
-    # Demand shock
-    # -------------------------------------------------------------
+    demand_multiplier_override = baseline_input.demand_multiplier_override
+
     if scenario.demand_multiplier != 1.0:
-        inventory_input = replace(
-            inventory_input,
-            expected_daily_demand=(
-                inventory_input.expected_daily_demand * scenario.demand_multiplier
-            ),
-        )
+        if demand_multiplier_override is None:
+            demand_multiplier_override = scenario.demand_multiplier
+        else:
+            demand_multiplier_override *= scenario.demand_multiplier
 
-        replenishment_input = replace(
-            replenishment_input,
-            expected_daily_demand=(
-                replenishment_input.expected_daily_demand * scenario.demand_multiplier
-            ),
-        )
-
-    # -------------------------------------------------------------
-    # Lead time shock
-    # -------------------------------------------------------------
     if scenario.lead_time_multiplier != 1.0:
+        updated_inventory_lead_time = max(
+            1,
+            int(inventory_input.lead_time_days * scenario.lead_time_multiplier),
+        )
+        updated_replenishment_lead_time = max(
+            1,
+            int(replenishment_input.lead_time_days * scenario.lead_time_multiplier),
+        )
+
         inventory_input = replace(
             inventory_input,
-            lead_time_days=int(
-                inventory_input.lead_time_days * scenario.lead_time_multiplier
-            ),
+            lead_time_days=updated_inventory_lead_time,
         )
 
         replenishment_input = replace(
             replenishment_input,
-            lead_time_days=int(
-                replenishment_input.lead_time_days * scenario.lead_time_multiplier
-            ),
+            lead_time_days=updated_replenishment_lead_time,
         )
 
-    # -------------------------------------------------------------
-    # Inventory shock
-    # -------------------------------------------------------------
     if scenario.inventory_multiplier != 1.0:
         updated_record = replace(
             inventory_input.record,
@@ -95,16 +77,13 @@ def _apply_scenario_modifications(
         forecast_input=forecast_input,
         inventory_input=inventory_input,
         replenishment_input=updated_replenishment_tool_input,
+        demand_multiplier_override=demand_multiplier_override,
     )
 
     return simulated_input
 
 
 def run_simulation(simulation_input: SimulationInput) -> SimulationResult:
-    """
-    Execute a baseline run plus all scenario runs.
-    """
-
     baseline_result = run_supply_chain_decision(
         simulation_input.baseline_input
     )
@@ -127,8 +106,18 @@ def run_simulation(simulation_input: SimulationInput) -> SimulationResult:
             )
         )
 
-    return SimulationResult(
+    simulation_result = SimulationResult(
         baseline_input=simulation_input.baseline_input,
         baseline_result=baseline_result,
         scenario_results=scenario_results,
     )
+
+    analysis_service = ScenarioAnalysisService()
+    analysis_result = analysis_service.analyze(simulation_result)
+
+    simulation_result = replace(
+        simulation_result,
+        analysis_result=analysis_result,
+    )
+
+    return simulation_result

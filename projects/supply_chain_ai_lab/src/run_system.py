@@ -1,21 +1,22 @@
-from system_runner.service import run_supply_chain_system
-from system_runner.schemas import SystemRunnerConfig, SystemRunnerInput
-from system_runner.input_builder import build_decision_input
-
+from allocation.schemas import AllocationRequest, LocationDemand
 from disruption_modeling.schemas import (
-    DisruptionScenario,
+    AffectedNode,
     DisruptionEvent,
     DisruptionImpact,
+    DisruptionScenario,
     DisruptionType,
     SeverityLevel,
-    AffectedNode,
 )
+from system_runner.input_builder import (
+    build_allocation_request_from_network,
+    build_decision_input,
+    build_simulation_input,
+)
+from system_runner.schemas import SystemRunnerConfig, SystemRunnerInput
+from system_runner.service import run_supply_chain_system
 
 
 def build_sample_disruption_scenario() -> DisruptionScenario:
-    """
-    Create a simple disruption scenario for testing.
-    """
     event = DisruptionEvent(
         event_id="event_1",
         disruption_type=DisruptionType.SUPPLIER_DELAY,
@@ -41,60 +42,79 @@ def build_sample_disruption_scenario() -> DisruptionScenario:
     )
 
 
-def print_forecast_result(forecast_result) -> None:
-    print("\n=== FORECAST ===")
-    print(f"SKU: {forecast_result.sku_id}")
-    print(f"Location: {forecast_result.location_id}")
-    print(f"Horizon: {forecast_result.horizon}")
-    rounded_predictions = [round(value, 2) for value in forecast_result.predicted_values]
-    print(f"Predictions: {rounded_predictions}")
+def print_simulation_result(simulation_result) -> None:
+    print("\n=== SIMULATION ===")
 
+    # --- BASELINE ---
+    if simulation_result.baseline_result is not None:
+        print("\nBaseline:")
+        print(
+            "Reorder: "
+            f"{simulation_result.baseline_result.replenishment_result.should_reorder}"
+        )
+        print(
+            "Recommended Units: "
+            f"{round(simulation_result.baseline_result.replenishment_result.recommended_order_units, 2)}"
+        )
 
-def print_inventory_result(inventory_result) -> None:
-    print("\n=== INVENTORY ===")
-    print(f"SKU: {inventory_result.sku_id}")
-    print(f"Location: {inventory_result.location_id}")
-    print(f"Inventory Position: {round(inventory_result.inventory_position, 2)}")
-    print(f"Days of Supply: {round(inventory_result.days_of_supply, 2)}")
-    print(f"Stockout Risk: {inventory_result.stockout_risk}")
+    # --- SCENARIOS ---
+    for scenario_result in simulation_result.scenario_results:
+        print(f"\nScenario: {scenario_result.scenario.name}")
+        print(
+            "Reorder: "
+            f"{scenario_result.decision_result.replenishment_result.should_reorder}"
+        )
+        print(
+            "Recommended Units: "
+            f"{round(scenario_result.decision_result.replenishment_result.recommended_order_units, 2)}"
+        )
 
-
-def print_replenishment_result(replenishment_result) -> None:
-    print("\n=== REPLENISHMENT ===")
-    print(f"SKU: {replenishment_result.sku_id}")
-    print(f"Location: {replenishment_result.location_id}")
-    print(f"Reorder Point: {round(replenishment_result.reorder_point, 2)}")
-    print(f"Should Reorder: {replenishment_result.should_reorder}")
-    print(f"Recommended Units: {round(replenishment_result.recommended_order_units, 2)}")
-
-    if replenishment_result.reason_codes:
-        print("Reasons:")
-        for reason in replenishment_result.reason_codes:
-            print(f"  - {reason}")
-    else:
-        print("Reasons: None")
+    # --- ANALYSIS (FINAL CLEAN OUTPUT) ---
+    if simulation_result.analysis_result is not None:
+        print("\n=== SCENARIO ANALYSIS ===")
+        for row in simulation_result.analysis_result.comparison_rows:
+            print(
+                f"{row.scenario_name:<15} "
+                f"reorder={str(row.reorder):<6} "
+                f"units={round(row.recommended_units, 2):<10} "
+                f"delta={round(row.delta_vs_baseline, 2)}"
+            )
 
 
 def main():
-    mode = "disruption"  # change to "baseline" to compare
+    mode = "simulation"  # CHANGE THIS IF NEEDED
 
     config = SystemRunnerConfig(mode=mode)
     decision_input = build_decision_input()
 
     disruption_scenario = None
+    allocation_request = None
+    simulation_input = None
+
     if mode == "disruption":
         disruption_scenario = build_sample_disruption_scenario()
+
+    if mode == "allocation":
+        allocation_request = build_allocation_request_from_network()
+
+    if mode == "simulation":
+        simulation_input = build_simulation_input()
 
     system_input = SystemRunnerInput(
         decision_input=decision_input,
         disruption_scenario=disruption_scenario,
+        simulation_input=simulation_input,
+        allocation_request=allocation_request,
     )
 
     result = run_supply_chain_system(config, system_input)
 
-    print_forecast_result(result.core_result.forecast_result)
-    print_inventory_result(result.core_result.inventory_result)
-    print_replenishment_result(result.core_result.replenishment_result)
+    # --- SIMULATION OUTPUT ---
+    if result.simulation_result is not None:
+        print_simulation_result(result.simulation_result)
+        return
+
+    print("No simulation result produced.")
 
 
 if __name__ == "__main__":

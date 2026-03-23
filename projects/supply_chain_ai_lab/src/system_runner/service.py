@@ -1,7 +1,11 @@
 from dataclasses import replace
 
+from allocation.service import allocate_inventory
 from decision_coordinator.service import run_supply_chain_decision
 from disruption_modeling.service import resolve_disruption
+from simulation_engine.service import run_simulation
+from network_monitoring.service import build_network_health_report
+from network_monitoring.schemas import NetworkInventoryRecord
 
 from system_runner.schemas import (
     SystemRunnerConfig,
@@ -11,24 +15,33 @@ from system_runner.schemas import (
 
 
 def _apply_disruption(decision_input, impact):
-    """
-    Apply disruption impact directly to existing tool inputs.
-
-    Notes:
-    - frozen tool input wrappers are updated via dataclasses.replace
-    - inner domain objects can still be mutated if they are not frozen
-    """
-
     forecast_input = decision_input.forecast_input
     inventory_input = decision_input.inventory_input
     replenishment_tool_input = decision_input.replenishment_input
 
-    # ---------------------------------
+    # 1) DEMAND SHOCK -> inventory + replenishment demand inputs
+    if impact.demand_multiplier != 1.0:
+        inventory_input = replace(
+            inventory_input,
+            expected_daily_demand=(
+                inventory_input.expected_daily_demand * impact.demand_multiplier
+            ),
+        )
 
+        updated_replenishment_input = replace(
+            replenishment_tool_input.replenishment_input,
+            expected_daily_demand=(
+                replenishment_tool_input.replenishment_input.expected_daily_demand
+                * impact.demand_multiplier
+            ),
+        )
 
-    # ---------------------------------
+        replenishment_tool_input = replace(
+            replenishment_tool_input,
+            replenishment_input=updated_replenishment_input,
+        )
+
     # 2) INVENTORY LOSS -> inventory + replenishment position
-    # ---------------------------------
     if impact.inventory_loss_units > 0:
         inventory_record = inventory_input.record
         inventory_record.on_hand = max(
@@ -42,9 +55,7 @@ def _apply_disruption(decision_input, impact):
             replenishment_input.inventory_position - impact.inventory_loss_units,
         )
 
-    # ---------------------------------
     # 3) DELAYS -> lead times
-    # ---------------------------------
     delay_days = (
         impact.supplier_delay_days
         + impact.transportation_delay_days
@@ -83,14 +94,43 @@ def run_supply_chain_system(
     config: SystemRunnerConfig,
     system_input: SystemRunnerInput,
 ) -> SystemRunnerResult:
-    """
-    Top-level orchestration layer.
-    """
-
     disruption_result = None
     decision_input = system_input.decision_input
 
-    # --- STEP 1: Resolve/apply disruption before core decision ---
+    if config.mode == "allocation":
+        if system_input.allocation_request is None:
+            raise ValueError(
+                "allocation_request is required when mode='allocation'."
+            )
+
+        allocation_result = allocate_inventory(
+            system_input.allocation_request
+        )
+
+        return SystemRunnerResult(
+            core_result=None,
+            disruption_result=None,
+            allocation_result=allocation_result,
+            simulation_result=None,
+            monitoring_result=None,
+        )
+
+    if config.mode == "simulation":
+        if system_input.simulation_input is None:
+            raise ValueError(
+                "simulation_input is required when mode='simulation'."
+            )
+
+        simulation_result = run_simulation(system_input.simulation_input)
+
+        return SystemRunnerResult(
+            core_result=None,
+            disruption_result=None,
+            allocation_result=None,
+            simulation_result=simulation_result,
+            monitoring_result=None,
+        )
+
     if config.mode == "disruption":
         if system_input.disruption_scenario is None:
             raise ValueError(
@@ -99,22 +139,34 @@ def run_supply_chain_system(
 
         disruption_result = resolve_disruption(system_input.disruption_scenario)
         decision_input = replace(
-        decision_input,
-        disruption_impact=disruption_result.impact
+            decision_input,
+            disruption_impact=disruption_result.impact,
         )
         decision_input = _apply_disruption(
             decision_input,
             disruption_result.impact,
         )
 
-    # --- STEP 2: Run core decision engine ---
     core_result = run_supply_chain_decision(decision_input)
 
-    # --- STEP 3: Return unified result ---
+    monitoring_result = None
+    if config.mode == "monitoring":
+        inventory_result = core_result.inventory_result
+        inventory_record = NetworkInventoryRecord(
+            sku_id=inventory_result.sku_id,
+            location_id=inventory_result.location_id,
+            on_hand=inventory_result.inventory_position,
+            expected_daily_demand=decision_input.inventory_input.expected_daily_demand,
+        )
+
+        monitoring_result = build_network_health_report(
+            inventory_records=[inventory_record]
+        )
+
     return SystemRunnerResult(
         core_result=core_result,
         disruption_result=disruption_result,
         allocation_result=None,
         simulation_result=None,
-        monitoring_result=None,
+        monitoring_result=monitoring_result,
     )

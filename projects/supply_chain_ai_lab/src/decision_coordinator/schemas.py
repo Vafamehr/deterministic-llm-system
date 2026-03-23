@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Any, Optional
+from typing import Any, List, Optional
 
 from disruption_modeling.schemas import DisruptionImpact
 
@@ -17,28 +17,19 @@ from tools.schemas import (
 class DecisionCoordinatorInput:
     """
     Input to the Decision Coordinator.
-
-    This object bundles the inputs required for each tool that participates
-    in the end-to-end supply chain decision flow.
-
-    The coordinator does not transform domain data itself. It simply forwards
-    the appropriate inputs to the tool runner.
     """
 
     forecast_input: ForecastToolInput
     inventory_input: InventoryStatusToolInput
     replenishment_input: ReplenishmentToolInput
     disruption_impact: Optional[DisruptionImpact] = None
+    demand_multiplier_override: Optional[float] = None
 
 
 @dataclass
 class DecisionStepTrace:
     """
     Trace record for a single step in the decision pipeline.
-
-    This enables visibility into the decision execution order
-    and will later support debugging, simulation analysis,
-    and agent reasoning.
     """
 
     step_name: str
@@ -51,9 +42,6 @@ class DecisionStepTrace:
 class DecisionCoordinatorResult:
     """
     Final result of the supply chain decision pipeline.
-
-    This bundles the outputs of all executed tools and provides
-    a trace of the steps executed by the coordinator.
     """
 
     forecast_result: ForecastToolOutput

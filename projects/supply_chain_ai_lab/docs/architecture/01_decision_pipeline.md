@@ -1,107 +1,118 @@
 # Supply Chain Decision Pipeline — Architecture
 
-This system is a **deterministic, modular supply chain decision pipeline** that transforms historical demand into executable inventory decisions.
+This system is a **deterministic, modular supply chain decision pipeline** that transforms demand into inventory decisions.
 
-It follows a **sequential dependency structure**:
+Core flow:
 
 forecast → inventory → replenishment
 
-The architecture intentionally separates:
-
-- data computation
-- decision modules
-- execution control
-
-This makes the pipeline **traceable, extensible, and aligned with real supply chain decision flow**.
+Execution is controlled by a **Decision Coordinator**, and orchestration across scenarios is handled by the **System Runner**.
 
 ---
 
 ## One-Line Summary
 
-A modular, deterministic supply chain decision system that separates ML computation, business decision logic, and orchestration through clear interfaces.
+A coordinator-driven pipeline where demand is computed centrally, modules execute sequentially, and external capabilities (simulation, disruption, allocation, monitoring) operate outside the core flow.
 
 ---
 
-## End-to-End Pipeline
+## End-to-End Flow
 
 ```mermaid
 flowchart LR
-    A[Demand History<br/>CSV / DataFrame]
-    B[Forecast Tool]
-    C[Demand Signal]
-    D[Inventory Status Tool]
-    E[Replenishment Tool]
-    F[Decision Coordinator]
-    G[Execution Trace]
-    H[Decision Output]
-
-    A --> B --> C --> D --> E --> H
-
-    F -. executes .-> B
-    F -. executes .-> D
-    F -. executes .-> E
-
-    B --> F
-    D --> F
-    E --> F
-
-    B --> G
-    D --> G
-    E --> G
+    A[Demand History] --> B[Forecast Tool]
+    B --> C[Forecast Output]
+    C --> D[Decision Coordinator]
+    D --> E[Inventory Tool]
+    E --> F[Replenishment Tool]
+    F --> G[Decision Output]
 ```
 
 ---
 
-## Pipeline Explanation
-
-The system executes as a **dependency-driven decision pipeline** in which each step consumes the output of the previous step.
-
-### 1. Demand History
-Historical demand is loaded for a specific SKU-location pair.
-
-### 2. Forecast Tool
-The forecast module uses historical demand to generate forward-looking demand predictions.
-
-### 3. Demand Signal
-Forecast output is converted into a simplified, decision-ready demand estimate that downstream modules can use consistently.
-
-### 4. Inventory Status Tool
-The inventory module evaluates inventory relative to expected demand and produces:
-
-- inventory position  
-- days of supply  
-- stockout risk  
-
-### 5. Replenishment Tool
-The replenishment module converts the inventory assessment into an action:
-
-- whether to reorder  
-- recommended order quantity  
-- reason codes  
-
-### 6. Decision Coordinator
-The coordinator controls execution by:
-
-- enforcing the correct order  
-- passing outputs between modules  
-- recording execution trace  
-
-**Key rule:** each module depends on upstream context; no module operates in isolation.
-
----
-
-## Decision Dependency Flow
+## Coordinator Logic (Causal Flow)
 
 ```mermaid
 flowchart LR
-    A[Forecast Output]
-    B[Demand Signal]
-    C[Inventory Status]
-    D[Replenishment Decision]
+    A[Forecast Output] --> B[Decision Coordinator]
+    D[Disruption Impact] --> B
+    E[Demand Multiplier Override] --> B
 
-    A --> B
-    B --> C
-    C --> D
+    B --> C[Expected Demand]
+    C --> F[Inventory Tool]
+    F --> G[Inventory Output]
+    G --> H[Replenishment Tool]
+    H --> I[Replenishment Decision]
+``` 
+
+### Coordinator Responsibilities
+
+- execute modules in correct order  
+- recompute expected demand from forecast  
+- apply optional demand adjustments  
+- construct clean inputs for downstream modules  
+- return decision + trace  
+
+### Rules
+
+- forecast is not directly passed to inventory  
+- expected demand is always computed inside coordinator  
+- adjustments are optional inputs:
+  - disruption impact  
+  - demand multiplier override  
+- inventory and replenishment only consume coordinator outputs  
+
+---
+
+## System Runner (Execution Modes)
+
+```mermaid
+flowchart TB
+    A[System Runner]
+
+    B[Baseline Mode]
+    C[Disruption Mode]
+    D[Simulation Mode]
+    E[Allocation Mode]
+    F[Monitoring Mode]
+
+    G[Decision Coordinator]
+    H[Disruption Module]
+    I[Simulation Engine]
+    J[Allocation Module]
+    K[Monitoring Module]
+
+    A --> B --> G
+    A --> C --> H --> G
+    A --> D --> I --> G
+
+    A --> E --> J
+    A --> F --> K
+```
+
+### Runner Responsibilities
+
+- selects execution mode  
+- routes flow correctly  
+- keeps core pipeline unchanged  
+
+### Rules
+
+- coordinator always executes core pipeline  
+- disruption produces impact → then coordinator runs  
+- simulation produces overrides → then coordinator runs  
+- allocation operates outside core pipeline (multi-location)  
+- monitoring evaluates state, not decisions  
+
+---
+
+## Dependency Flow
+
+```mermaid
+flowchart LR
+    A[Forecast] --> B[Coordinator Demand Computation]
+    B --> C[Inventory Evaluation]
+    C --> D[Replenishment Decision]
 ```
 
 ---
@@ -110,156 +121,121 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph Data_Layer[Data / ML Layer]
-        A[Demand History DataFrame]
+    subgraph Data_Layer
+        A[Demand Data]
         B[Feature Engineering]
         C[Forecast Model]
     end
 
-    subgraph Tool_Layer[Decision Module Layer]
+    subgraph Module_Layer
         D[Forecast Tool]
-        E[Inventory Status Tool]
+        E[Inventory Tool]
         F[Replenishment Tool]
+        G[Disruption Module]
+        H[Simulation Engine]
+        I[Allocation Module]
+        J[Monitoring Module]
     end
 
-    subgraph Control_Layer[Coordination Layer]
-        G[Decision Coordinator]
-        H[Execution Trace]
+    subgraph Control_Layer
+        K[Decision Coordinator]
+        L[System Runner]
     end
 
     A --> D
     B --> D
     C --> D
 
-    D --> E
-    E --> F
+    D --> K
+    K --> E --> F
 
-    G -. orchestrates .-> D
-    G -. orchestrates .-> E
-    G -. orchestrates .-> F
-
-    D --> H
-    E --> H
-    F --> H
+    L --> K
+    L --> G
+    L --> H
+    L --> I
+    L --> J
 ```
 
 ---
 
 ## Data Representation Separation
 
-The architecture intentionally uses two representation layers.
-
 ### DataFrame World
-Used for:
 
 - data loading  
 - transformation  
-- feature creation  
+- feature engineering  
 - model computation  
 
-Flexible and computation-focused.
-
 ### Dataclass World
-Used for:
 
 - module inputs  
 - module outputs  
-- stable system interfaces  
+- system interfaces  
 
-Strict and interface-focused.
-
-### Why this separation exists
+### Why
 
 - DataFrames are optimized for computation  
-- Dataclasses enforce clean system boundaries  
-
-The goal is to prevent raw computation objects from becoming system interfaces.
+- dataclasses enforce stable system boundaries  
+- prevents leakage of raw computation into decision interfaces  
 
 ---
 
-## Module Map
+## Module Positioning
 
 ```mermaid
 flowchart TB
-    subgraph CORE[Core Modules - Implemented]
-        A[Forecast Module]
-        B[Inventory Module]
-        C[Replenishment Module]
-        D[Decision Coordinator]
+    subgraph Core Pipeline
+        A[Forecast]
+        B[Inventory]
+        C[Replenishment]
+        D[Coordinator]
     end
 
-    subgraph EXT[Adjacent Modules - Planned]
-        E[Disruption Module]
-        F[Simulation Engine]
-        G[Allocation Module]
+    subgraph External Modules
+        E[Disruption]
+        F[Simulation]
+        G[Allocation]
         H[Monitoring]
-        I[LLM Layer]
     end
 
-    A --> B --> C
-    D --> A
-    D --> B
-    D --> C
+    D --> A --> B --> C
 
-    C -. future .-> E
-    C -. future .-> F
-    C -. future .-> G
-    D -. future .-> H
-    D -. future .-> I
+    E --> D
+    F --> D
+
+    G -. external .- D
+    H -. evaluation .- D
 ```
 
 ---
 
-## Architecture Reasoning
+## Key Principles
 
-- modules create clear boundaries and enable replacement  
-- the coordinator centralizes execution control and maintains consistency  
-- deterministic-first design ensures reliability, traceability, and debuggability  
-
----
-
-## Validation
-
-- data flows sequentially: forecast → inventory → replenishment  
-- SKU and location remain aligned across the pipeline  
-- each module has a single responsibility  
-- the system is modular and extensible  
+- coordinator owns demand computation  
+- pipeline is strictly sequential  
+- system runner controls orchestration  
+- external modules do not alter pipeline structure  
+- clear separation between computation and interfaces  
 
 ---
 
 ## Common Failure Modes
 
-- sending forecast directly to replenishment without inventory evaluation  
-- ignoring inventory context in decision making  
-- mixing DataFrame computation with module contracts  
-- hardcoding execution inside modules  
-- losing SKU/location alignment  
+- skipping inventory step  
+- passing forecast directly to replenishment  
+- embedding allocation inside pipeline  
+- letting simulation alter core logic  
+- mixing orchestration into modules  
+- using DataFrames as system interfaces  
 
 ---
 
-## Mental Model (Quick Recall)
+## Mental Model
 
 ```mermaid
 flowchart LR
-    A[Predict]
-    B[Interpret]
-    C[Evaluate]
-    D[Decide]
-
-    A --> B --> C --> D
+    A[Predict] --> B[Adjust] --> C[Evaluate] --> D[Decide]
 ```
 
-Forecast → Demand Signal → Inventory → Replenishment
-
----
-
-## Readiness Check
-
-The system is:
-
-- stable and deterministic  
-- correctly wired end-to-end  
-- modular and extensible  
-- aligned with real supply chain decision logic  
-
-Ready for extension into disruption, simulation, and allocation layers.
+Forecast → Coordinator → Inventory → Replenishment

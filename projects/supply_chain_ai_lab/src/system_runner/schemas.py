@@ -9,6 +9,11 @@ from decision_coordinator.schemas import (
 from disruption_modeling.service import ResolvedDisruption
 from disruption_modeling.schemas import DisruptionScenario
 
+from allocation.schemas import AllocationRequest, AllocationResult
+
+from simulation_engine.schemas import SimulationInput, SimulationResult
+from network_monitoring.schemas import NetworkHealthReport
+
 
 @dataclass
 class SystemRunnerConfig:
@@ -19,12 +24,14 @@ class SystemRunnerConfig:
 class SystemRunnerInput:
     decision_input: DecisionCoordinatorInput
     disruption_scenario: Optional[DisruptionScenario] = None
+    simulation_input: Optional[SimulationInput] = None
+    allocation_request: Optional[AllocationRequest] = None
 
 
 @dataclass
 class SystemRunnerResult:
-    core_result: DecisionCoordinatorResult
+    core_result: Optional[DecisionCoordinatorResult] = None
     disruption_result: Optional[ResolvedDisruption] = None
-    allocation_result: Optional[object] = None
-    simulation_result: Optional[object] = None
-    monitoring_result: Optional[object] = None
+    allocation_result: Optional[AllocationResult] = None
+    simulation_result: Optional[SimulationResult] = None
+    monitoring_result: Optional[NetworkHealthReport] = None

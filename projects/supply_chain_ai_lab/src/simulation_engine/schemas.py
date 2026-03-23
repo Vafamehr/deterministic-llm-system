@@ -5,6 +5,7 @@ from decision_coordinator.schemas import (
     DecisionCoordinatorInput,
     DecisionCoordinatorResult,
 )
+from scenario_analysis.schemas import ScenarioAnalysisResult
 
 
 @dataclass
@@ -68,3 +69,4 @@ class SimulationResult:
     baseline_result: Optional[DecisionCoordinatorResult]
 
     scenario_results: List[ScenarioResult]
+    analysis_result: Optional[ScenarioAnalysisResult] = None
