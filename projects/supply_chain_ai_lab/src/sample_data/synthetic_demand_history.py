@@ -97,12 +97,12 @@ def save_synthetic_demand_history(
     df = generate_synthetic_demand_history(start_date, end_date)
     df.to_csv(output_file, index=False)
 
-if __name__ == "__main__":
-    df = generate_synthetic_demand_history()
+# if __name__ == "__main__":
+#     df = generate_synthetic_demand_history()
 
-    print(df.head())
-    print()
-    print(f"Rows: {len(df)}")
+#     print(df.head())
+#     print()
+#     print(f"Rows: {len(df)}")
 
-    save_synthetic_demand_history()
-    print("Synthetic demand history saved.")
+#     save_synthetic_demand_history()
+#     print("Synthetic demand history saved.")

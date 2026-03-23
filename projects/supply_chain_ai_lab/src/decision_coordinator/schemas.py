@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Any
+from typing import List, Any, Optional
+
+from disruption_modeling.schemas import DisruptionImpact
 
 from tools.schemas import (
     ForecastToolInput,
@@ -26,6 +28,7 @@ class DecisionCoordinatorInput:
     forecast_input: ForecastToolInput
     inventory_input: InventoryStatusToolInput
     replenishment_input: ReplenishmentToolInput
+    disruption_impact: Optional[DisruptionImpact] = None
 
 
 @dataclass

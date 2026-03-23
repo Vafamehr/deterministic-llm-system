@@ -52,9 +52,13 @@ def run_supply_chain_decision(
         )
     )
 
-    # --- Derive demand signal from forecast ---
     predicted_values = forecast_output.predicted_values
     expected_daily_demand = sum(predicted_values) / len(predicted_values)
+
+    # --- Apply disruption demand adjustment (if present) ---
+    impact = getattr(decision_input, "disruption_impact", None)
+    if impact:
+        expected_daily_demand *= impact.demand_multiplier
 
     # --- Step 2: Inventory ---
     updated_inventory_input = type(decision_input.inventory_input)(
@@ -78,12 +82,13 @@ def run_supply_chain_decision(
     )
 
     # --- Step 3: Replenishment ---
+    # --- Step 3: Replenishment ---
     rep_input = decision_input.replenishment_input.replenishment_input
 
     updated_rep_input = type(rep_input)(
         sku_id=rep_input.sku_id,
         location_id=rep_input.location_id,
-        inventory_position=rep_input.inventory_position,
+        inventory_position=inventory_output.inventory_position,
         expected_daily_demand=expected_daily_demand,
         lead_time_days=rep_input.lead_time_days,
         safety_stock=rep_input.safety_stock,
