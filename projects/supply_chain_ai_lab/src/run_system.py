@@ -76,8 +76,10 @@ def print_simulation_result(simulation_result) -> None:
             print(
                 f"{row.scenario_name:<15} "
                 f"reorder={str(row.reorder):<6} "
-                f"units={round(row.recommended_units, 2):<10} "
-                f"delta={round(row.delta_vs_baseline, 2)}"
+                f"units={row.recommended_units:<10.2f} "
+                f"delta={row.delta_vs_baseline:<10.2f} "
+                f"dos={row.days_of_supply:<8.2f} "
+                f"risk={row.stockout_risk:<6}"
             )
 
 

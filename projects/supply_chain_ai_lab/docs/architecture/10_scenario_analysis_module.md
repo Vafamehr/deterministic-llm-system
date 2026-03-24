@@ -141,3 +141,30 @@ analysis = compare outcomes
 ## Final View
 
 The Scenario Analysis module is the **interpretation layer**, turning scenario results into clear, comparable insights.
+
+## Scenario Intelligence Signals
+
+The Scenario Analysis layer converts raw simulation outputs into interpretable signals.
+
+In addition to core decision outputs (reorder, recommended units), the system exposes:
+
+### Days of Supply (DOS)
+Represents how long current inventory can satisfy expected demand.
+
+- Lower DOS → higher urgency
+- Higher DOS → safer inventory position
+
+### Stockout Risk
+Categorical risk signal derived from inventory conditions.
+
+- LOW → sufficient coverage
+- MEDIUM → potential risk under variation
+- HIGH → likely stockout without intervention
+
+### Delta vs Baseline
+Measures how much a scenario deviates from normal operating conditions.
+
+- Positive → more units required than baseline
+- Negative → fewer units required
+
+These signals allow the system to move beyond raw outputs and provide operational context for decision making.
