@@ -13,6 +13,7 @@ class ScenarioComparisonRow:
     delta_vs_baseline: float
     days_of_supply: float
     stockout_risk: str
+    inventory_pressure: str
 
 
 @dataclass(frozen=True)

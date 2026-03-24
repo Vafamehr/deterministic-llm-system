@@ -79,7 +79,8 @@ def print_simulation_result(simulation_result) -> None:
                 f"units={row.recommended_units:<10.2f} "
                 f"delta={row.delta_vs_baseline:<10.2f} "
                 f"dos={row.days_of_supply:<8.2f} "
-                f"risk={row.stockout_risk:<6}"
+                f"risk={row.stockout_risk:<6} "
+                f"pressure={row.inventory_pressure:<6}"
             )
 
 

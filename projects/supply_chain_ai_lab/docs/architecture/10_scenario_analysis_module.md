@@ -168,3 +168,29 @@ Measures how much a scenario deviates from normal operating conditions.
 - Negative → fewer units required
 
 These signals allow the system to move beyond raw outputs and provide operational context for decision making.
+
+## Derived Interpretation Signals
+
+In addition to raw scenario outputs, the Scenario Analysis layer introduces a derived signal to improve interpretability.
+
+### Inventory Pressure
+
+Inventory pressure is a simplified, human-readable signal derived from days of supply (DOS).
+
+It compresses inventory coverage into an actionable interpretation of urgency:
+
+- HIGH → days_of_supply < 7  
+- MEDIUM → 7 ≤ days_of_supply ≤ 14  
+- LOW → days_of_supply > 14  
+
+### Why This Exists
+
+While days_of_supply and stockout_risk provide useful signals, they require interpretation.
+
+Inventory pressure provides:
+
+- a direct indication of urgency  
+- a simplified decision-facing signal  
+- a bridge between raw metrics and human reasoning  
+
+This makes the system outputs easier to understand, compare across scenarios, and later explain using higher-level layers such as LLMs.

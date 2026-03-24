@@ -10,6 +10,13 @@ class ScenarioAnalysisService:
     Converts raw simulation results into structured scenario comparisons.
     """
 
+    def _compute_inventory_pressure(self, days_of_supply: float) -> str:
+        if days_of_supply < 7:
+            return "HIGH"
+        if days_of_supply <= 14:
+            return "MEDIUM"
+        return "LOW"
+
     def analyze(self, simulation_result: SimulationResult) -> ScenarioAnalysisResult:
         if not simulation_result.scenario_results:
             raise ValueError("simulation_result.scenario_results cannot be empty.")
@@ -25,6 +32,9 @@ class ScenarioAnalysisService:
         baseline_units = baseline_replenishment.recommended_order_units
         baseline_days_of_supply = baseline_inventory.days_of_supply
         baseline_stockout_risk = baseline_inventory.stockout_risk
+        baseline_inventory_pressure = self._compute_inventory_pressure(
+            baseline_days_of_supply
+        )
 
         comparison_rows = [
             ScenarioComparisonRow(
@@ -34,6 +44,7 @@ class ScenarioAnalysisService:
                 delta_vs_baseline=0.0,
                 days_of_supply=baseline_days_of_supply,
                 stockout_risk=baseline_stockout_risk,
+                inventory_pressure=baseline_inventory_pressure,
             )
         ]
 
@@ -50,6 +61,9 @@ class ScenarioAnalysisService:
             delta_vs_baseline = scenario_units - baseline_units
             scenario_days_of_supply = inventory.days_of_supply
             scenario_stockout_risk = inventory.stockout_risk
+            scenario_inventory_pressure = self._compute_inventory_pressure(
+                scenario_days_of_supply
+            )
 
             comparison_rows.append(
                 ScenarioComparisonRow(
@@ -59,6 +73,7 @@ class ScenarioAnalysisService:
                     delta_vs_baseline=delta_vs_baseline,
                     days_of_supply=scenario_days_of_supply,
                     stockout_risk=scenario_stockout_risk,
+                    inventory_pressure=scenario_inventory_pressure,
                 )
             )
 
