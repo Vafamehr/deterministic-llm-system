@@ -1,4 +1,3 @@
-from allocation.schemas import AllocationRequest, LocationDemand
 from disruption_modeling.schemas import (
     AffectedNode,
     DisruptionEvent,
@@ -9,11 +8,12 @@ from disruption_modeling.schemas import (
 )
 from llm_support.schemas import ExplanationTask
 from system_runner.input_builder import (
-    build_allocation_request_from_network,
-    build_decision_input,
+    build_allocation_runner_input,
+    build_baseline_runner_input,
+    build_disruption_runner_input,
     build_simulation_runner_input,
 )
-from system_runner.schemas import SystemRunnerConfig, SystemRunnerInput
+from system_runner.schemas import SystemRunnerConfig
 from system_runner.service import run_supply_chain_system
 
 
@@ -43,6 +43,61 @@ def build_sample_disruption_scenario() -> DisruptionScenario:
     )
 
 
+def print_selected_context(system_input) -> None:
+    record = system_input.decision_input.inventory_input.record
+
+    print("\n=== SELECTED CONTEXT ===")
+    print(f"SKU: {record.sku_id}")
+    print(f"Location: {record.location_id}")
+    print(f"On Hand: {record.on_hand}")
+    print(f"On Order: {record.on_order}")
+    print(f"Reserved: {record.reserved}")
+
+
+def print_core_result(core_result) -> None:
+    print("\n=== CORE DECISION RESULT ===")
+    print(f"Forecast: {core_result.forecast_result.forecast_values}")
+    print(
+        f"Expected Daily Demand: "
+        f"{core_result.inventory_result.expected_daily_demand:.2f}"
+    )
+    print(f"Days of Supply: {core_result.inventory_result.days_of_supply:.2f}")
+    print(f"Stockout Risk: {core_result.inventory_result.stockout_risk}")
+    print(f"Inventory Pressure: {core_result.inventory_result.inventory_pressure}")
+    print(f"Reorder: {core_result.replenishment_result.reorder}")
+    print(
+        f"Recommended Units: "
+        f"{core_result.replenishment_result.recommended_units:.2f}"
+    )
+
+
+def print_disruption_result(disruption_result) -> None:
+    print("\n=== DISRUPTION RESULT ===")
+    print(f"Scenario: {disruption_result.scenario_name}")
+    print(f"Demand Multiplier: {disruption_result.impact.demand_multiplier}")
+    print(f"Inventory Loss Units: {disruption_result.impact.inventory_loss_units}")
+    print(f"Supplier Delay Days: {disruption_result.impact.supplier_delay_days}")
+    print(
+        f"Warehouse Capacity Multiplier: "
+        f"{disruption_result.impact.warehouse_capacity_multiplier}"
+    )
+    print(
+        f"Transportation Delay Days: "
+        f"{disruption_result.impact.transportation_delay_days}"
+    )
+
+
+def print_allocation_result(allocation_result) -> None:
+    print("\n=== ALLOCATION RESULT ===")
+    print(f"SKU: {allocation_result.sku_id}")
+
+    for allocation in allocation_result.allocations:
+        print(
+            f"{allocation.location_id:<15} "
+            f"allocated_units={allocation.allocated_units:.2f}"
+        )
+
+
 def print_simulation_result(simulation_result) -> None:
     print("\n=== SCENARIO ANALYSIS ===")
 
@@ -68,48 +123,67 @@ def print_llm_explanation(llm_explanation) -> None:
     print(llm_explanation.explanation_text)
 
 
-def main():
+def main() -> None:
     mode = "simulation"  # CHANGE THIS IF NEEDED
+
+    # Optional explicit selection.
+    # Leave as None/None to use fallback behavior from input_builder.
+    sku_id = None
+    location_id = None
 
     config = SystemRunnerConfig(mode=mode)
 
-    if mode == "simulation":
+    if mode == "baseline":
+        system_input = build_baseline_runner_input(
+            sku_id=sku_id,
+            location_id=location_id,
+        )
+    elif mode == "simulation":
         system_input = build_simulation_runner_input(
             explanation_task=ExplanationTask.SCENARIO_COMPARISON,
             explanation_question=None,
+            sku_id=sku_id,
+            location_id=location_id,
         )
+    elif mode == "disruption":
+        system_input = build_disruption_runner_input(
+            disruption_scenario=build_sample_disruption_scenario(),
+            sku_id=sku_id,
+            location_id=location_id,
+        )
+    elif mode == "allocation":
+        system_input = build_allocation_runner_input()
     else:
-        decision_input = build_decision_input()
+        raise ValueError(f"Unsupported mode: {mode}")
 
-        disruption_scenario = None
-        allocation_request = None
-
-        if mode == "disruption":
-            disruption_scenario = build_sample_disruption_scenario()
-
-        if mode == "allocation":
-            allocation_request = build_allocation_request_from_network()
-
-        system_input = SystemRunnerInput(
-            decision_input=decision_input,
-            disruption_scenario=disruption_scenario,
-            simulation_input=None,
-            allocation_request=allocation_request,
-            explanation_task=None,
-            explanation_question=None,
-        )
+    print_selected_context(system_input)
 
     result = run_supply_chain_system(config, system_input)
+
+    if result.core_result is not None:
+        print_core_result(result.core_result)
+
+    if result.disruption_result is not None:
+        print_disruption_result(result.disruption_result)
+
+    if result.allocation_result is not None:
+        print_allocation_result(result.allocation_result)
 
     if result.simulation_result is not None:
         print_simulation_result(result.simulation_result)
 
-        if result.llm_explanation is not None:
-            print_llm_explanation(result.llm_explanation)
+    if result.llm_explanation is not None:
+        print_llm_explanation(result.llm_explanation)
 
-        return
-
-    print("No simulation result produced.")
+    if (
+        result.core_result is None
+        and result.disruption_result is None
+        and result.allocation_result is None
+        and result.simulation_result is None
+        and result.monitoring_result is None
+        and result.llm_explanation is None
+    ):
+        print("No result produced.")
 
 
 if __name__ == "__main__":

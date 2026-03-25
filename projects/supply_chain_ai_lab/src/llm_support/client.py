@@ -21,8 +21,8 @@ class LLMClient:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "num_predict": 180,
-                "temperature": 0.3,
+                "num_predict": 140,
+                "temperature": 0.1,
             },
         }
 
@@ -38,10 +38,35 @@ class LLMClient:
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 response_data = json.loads(response.read().decode("utf-8"))
-                return response_data.get("response", "").strip()
+                raw_text = response_data.get("response", "").strip()
+                return self._postprocess_response(raw_text)
 
         except Exception as e:
             return (
                 "LLM generation failed. Unable to produce explanation. "
                 f"Error: {str(e)}"
             )
+
+    def _postprocess_response(self, text: str) -> str:
+        if not text:
+            return "LLM returned an empty explanation."
+
+        lines = [line.rstrip() for line in text.splitlines()]
+        cleaned_lines = []
+
+        for line in lines:
+            if line.strip():
+                cleaned_lines.append(line)
+
+        cleaned_text = "\n".join(cleaned_lines).strip()
+
+        marker_positions = []
+        for marker in ["SUMMARY", "SCENARIO CHANGES", "RISK TAKEAWAY"]:
+            position = cleaned_text.find(marker)
+            if position != -1:
+                marker_positions.append(position)
+
+        if marker_positions:
+            cleaned_text = cleaned_text[min(marker_positions):].strip()
+
+        return cleaned_text

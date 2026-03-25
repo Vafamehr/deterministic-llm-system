@@ -33,42 +33,60 @@ def build_explanation_prompt(request: ExplanationRequest) -> str:
 
     system_note_block = ""
     if context.system_note is not None and context.system_note.strip():
-        system_note_block = f"\nSYSTEM NOTE\n- {context.system_note}\n"
+        system_note_block = f"SYSTEM NOTE\n- {context.system_note}\n"
 
-    task_instruction = ""
     if request.task == ExplanationTask.SIMULATION_SUMMARY:
         task_instruction = (
             "TASK\n"
-            "Write a short grounded summary of the simulation results. "
-            "Explain what changed from baseline across scenarios using only the provided structured outputs.\n"
+            "Write a short simulation summary using only the structured results.\n"
         )
     elif request.task == ExplanationTask.SCENARIO_COMPARISON:
         task_instruction = (
             "TASK\n"
-            "Compare the scenarios against the baseline. "
-            "Highlight the main differences in reorder behavior, recommended units, inventory pressure, "
-            "days of supply, and stockout risk using only the provided structured outputs.\n"
+            "Compare the scenarios against baseline using only the structured results.\n"
         )
     elif request.task == ExplanationTask.RISK_EXPLANATION:
         task_instruction = (
             "TASK\n"
-            "Explain the main operational risks shown by the simulation outputs. "
-            "Focus on stockout risk, inventory pressure, days of supply, and why recommended units changed.\n"
+            "Explain the main operational risks using only the structured results.\n"
         )
     else:
         raise ValueError(f"Unsupported explanation task: {request.task}")
+
+    output_contract_block = (
+        "OUTPUT FORMAT\n"
+        "Return plain text only.\n"
+        "Return EXACTLY these 3 labels and nothing else:\n"
+        "SUMMARY\n"
+        "SCENARIO CHANGES\n"
+        "RISK TAKEAWAY\n"
+        "\n"
+        "FORMAT RULES\n"
+        "- Do not use markdown.\n"
+        "- Do not use **, *, -, or numbered lists in the final answer.\n"
+        "- Write the label on its own line.\n"
+        "- Put the content for that label on the next line.\n"
+        "- SUMMARY: exactly 1 sentence.\n"
+        "- SCENARIO CHANGES: exactly 2 sentences.\n"
+        "- RISK TAKEAWAY: exactly 1 sentence.\n"
+        "- If multiple non-baseline scenarios are present, mention all of them in SCENARIO CHANGES.\n"
+        "- Total output must stay under 110 words.\n"
+    )
 
     guardrail_block = (
         "GUARDRAILS\n"
         "- Do not invent facts.\n"
         "- Do not mention data that is not provided.\n"
         "- Do not make decisions for the system.\n"
+        "- Do not add introductions or conclusions.\n"
+        "- Do not use any heading other than SUMMARY, SCENARIO CHANGES, and RISK TAKEAWAY.\n"
         "- The deterministic outputs are the source of truth.\n"
         "- Keep the explanation concise and operationally grounded.\n"
     )
 
     prompt = (
         f"{task_instruction}\n"
+        f"{output_contract_block}\n"
         f"{baseline_block}\n"
         f"{scenario_block}\n"
         f"{system_note_block}\n"
