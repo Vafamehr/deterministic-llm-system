@@ -21,6 +21,8 @@ from simulation_engine.scenarios import (
     build_supplier_delay_scenario,
 )
 
+from system_runner.schemas import SystemRunnerInput
+
 
 def build_decision_input() -> DecisionCoordinatorInput:
     """
@@ -120,7 +122,6 @@ def build_decision_input() -> DecisionCoordinatorInput:
     )
 
 
-
 def build_allocation_request_from_network() -> AllocationRequest:
     """
     Build AllocationRequest using real network + demand data.
@@ -207,4 +208,24 @@ def build_simulation_input() -> SimulationInput:
     return SimulationInput(
         baseline_input=baseline_input,
         scenarios=scenarios,
+    )
+
+
+def build_simulation_runner_input(
+    explanation_task: str = "scenario_comparison",
+    explanation_question: str | None = None,
+) -> SystemRunnerInput:
+    """
+    Build SystemRunnerInput for simulation mode, optionally including
+    V3 explanation settings.
+    """
+
+    decision_input = build_decision_input()
+    simulation_input = build_simulation_input()
+
+    return SystemRunnerInput(
+        decision_input=decision_input,
+        simulation_input=simulation_input,
+        explanation_task=explanation_task,
+        explanation_question=explanation_question,
     )

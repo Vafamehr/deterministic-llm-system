@@ -3,9 +3,10 @@ from dataclasses import replace
 from allocation.service import allocate_inventory
 from decision_coordinator.service import run_supply_chain_decision
 from disruption_modeling.service import resolve_disruption
-from simulation_engine.service import run_simulation
-from network_monitoring.service import build_network_health_report
+from llm_support.service import LLMExplanationService
 from network_monitoring.schemas import NetworkInventoryRecord
+from network_monitoring.service import build_network_health_report
+from simulation_engine.service import run_simulation
 
 from system_runner.schemas import (
     SystemRunnerConfig,
@@ -56,10 +57,7 @@ def _apply_disruption(decision_input, impact):
         )
 
     # 3) DELAYS -> lead times
-    delay_days = (
-        impact.supplier_delay_days
-        + impact.transportation_delay_days
-    )
+    delay_days = impact.supplier_delay_days + impact.transportation_delay_days
 
     if delay_days > 0:
         inventory_input = replace(
@@ -113,6 +111,7 @@ def run_supply_chain_system(
             allocation_result=allocation_result,
             simulation_result=None,
             monitoring_result=None,
+            llm_explanation=None,
         )
 
     if config.mode == "simulation":
@@ -123,12 +122,20 @@ def run_supply_chain_system(
 
         simulation_result = run_simulation(system_input.simulation_input)
 
+        llm_explanation = None
+        if system_input.explanation_task is not None:
+            llm_service = LLMExplanationService()
+            llm_explanation = llm_service.explain(
+                simulation_result=simulation_result,
+                task=system_input.explanation_task,
+            )
         return SystemRunnerResult(
             core_result=None,
             disruption_result=None,
             allocation_result=None,
             simulation_result=simulation_result,
             monitoring_result=None,
+            llm_explanation=llm_explanation,
         )
 
     if config.mode == "disruption":
@@ -169,4 +176,5 @@ def run_supply_chain_system(
         allocation_result=None,
         simulation_result=None,
         monitoring_result=monitoring_result,
+        llm_explanation=None,
     )
