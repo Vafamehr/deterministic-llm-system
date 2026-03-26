@@ -71,6 +71,12 @@ def build_decision_input(
         if inventory_record is None or series_df is None:
             raise ValueError("No inventory record matched any demand series.")
 
+    # --- TEMP TEST OVERRIDE (OVERSTOCK CASE) ---
+    # Remove after validation.
+    # inventory_record.on_hand = 800
+    # inventory_record.on_order = 0
+    # inventory_record.reserved = 0
+
     selected_sku_id = inventory_record.sku_id
     selected_location_id = inventory_record.location_id
 
