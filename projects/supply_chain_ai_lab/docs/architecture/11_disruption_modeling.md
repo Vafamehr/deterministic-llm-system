@@ -1,125 +1,90 @@
-# Disruption Modeling Module Architecture
+# Disruption Modeling
 
 ## Purpose
 
-The disruption modeling module represents **real-world supply chain disruptions** and converts them into operational impacts that the system can use.
-
-Examples:
-
-- supplier delays  
-- demand spikes  
-- warehouse shutdowns  
-- inventory loss  
-- transportation disruptions  
+Represents real-world supply chain disruptions and converts them into inputs that the system can use.
 
 ---
 
 ## One-Line Summary
 
-Converts **business disruption events → operational parameters for simulation**.
+Transforms business events into numeric parameters for simulation.
 
 ---
 
-## Architectural Role
+## Role in System
 
-Acts as a **translation layer** between:
-
-business events → operational inputs  
-
-Business terms:
-
-- supplier delay  
-- demand surge  
-- warehouse outage  
-
-Operational parameters:
-
-- delay days  
-- demand multipliers  
-- inventory loss  
-- capacity reductions  
-
----
-
-## System Position
-
-Sits between scenario definition and simulation execution.
+Used during scenario setup before simulation runs.
 
 Flow:
 
-Decision Pipeline  
-→ Simulation Engine  
-→ (uses disruption inputs)  
-→ Scenario Analysis  
+Disruption Modeling → Simulation → Coordinator → Modules
 
-It feeds modified inputs into simulation.
+It does not execute the pipeline.
+It prepares inputs for it.
 
 ---
 
-## Core Concepts
+## Core Mapping
 
-### Disruption Event
-
-Represents the real-world issue.
-
-Attributes:
-
-- type  
-- severity  
-- duration  
-- affected node  
+event → impact
 
 Examples:
 
-- supplier delay at Supplier A  
-- warehouse outage at DC-2  
+* supplier delay → increased lead time
+* demand spike → demand multiplier
+* inventory loss → reduced available stock
+
+---
+
+## Components
+
+### Disruption Event
+
+Describes what happened.
+
+* type
+* severity
+* duration
+* affected node
 
 ---
 
 ### Disruption Impact
 
-Represents operational effects.
+Defines how the system is affected.
 
-Examples:
-
-- supplier_delay_days  
-- demand_multiplier  
-- inventory_loss_units  
-- warehouse_capacity_multiplier  
-- transportation_delay_days  
+* demand multiplier
+* lead time adjustment
+* inventory loss
+* capacity change
 
 ---
 
 ### Disruption Scenario
 
-Combination of:
+Combines:
 
-- disruption event  
-- operational impact  
+* event
+* impact
 
-Used by simulation to test behavior.
+This is what simulation consumes.
 
 ---
 
 ## Responsibilities
 
-- define disruption types  
-- map events to numeric impacts  
-- provide structured inputs for simulation  
-
-Does not execute decisions or simulation.
+* define disruption types
+* map events to operational impacts
+* generate structured inputs for simulation
 
 ---
 
-## Design Principles
+## What It Does Not Do
 
-Deterministic → numeric, repeatable impacts  
-
-Separation → business events separate from system logic  
-
-Extensible → new disruption types without changes to core system  
-
-Modular → independent component  
+* does not run simulation
+* does not execute decisions
+* does not modify pipeline logic
 
 ---
 
@@ -127,38 +92,35 @@ Modular → independent component
 
 ```text
 src/disruption_modeling/
-- __init__.py
 - schemas.py
-- mappings.py
 - service.py
+- mappings.py
 ```
 
 ---
 
-## Relationship
+## Dependency Direction
 
-Upstream of simulation  
-Used during scenario creation  
+disruption → simulation → coordinator → modules
 
 ---
 
-## Future Extensions
+## Design Rules
 
-- probabilistic modeling  
-- multi-node propagation  
-- correlated disruptions  
-- historical datasets  
-- scenario libraries  
+* deterministic
+* modular
+* extensible
+* separate from core logic
 
 ---
 
 ## Mental Model
 
-event = what happened  
-impact = how system is affected  
+event = what happened
+impact = how the system reacts
 
 ---
 
-## Final View
+## One-Line Summary
 
-The disruption module is the **bridge between real-world events and operational simulation**, enabling realistic scenario testing without changing core decision logic.
+A translation layer that converts real-world disruptions into simulation-ready inputs.

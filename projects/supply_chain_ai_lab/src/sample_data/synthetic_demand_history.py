@@ -1,8 +1,11 @@
+from pathlib import Path
 import pandas as pd
 import numpy as np
 
-PRODUCTS_FILE = "sample_data/network_products.csv"
-LOCATIONS_FILE = "sample_data/network_locations.csv"
+DATA_DIR = Path(__file__).resolve().parent
+
+PRODUCTS_FILE = DATA_DIR / "network_products.csv"
+LOCATIONS_FILE = DATA_DIR / "network_locations.csv"
 
 
 def load_products_table() -> pd.DataFrame:
@@ -87,7 +90,7 @@ def generate_synthetic_demand_history(
 
 
 def save_synthetic_demand_history(
-    output_file: str = "sample_data/synthetic_demand_history.csv",
+    output_file: Path = DATA_DIR / "synthetic_demand_history.csv",
     start_date: str = "2024-01-01",
     end_date: str = "2024-12-31",
 ) -> None:

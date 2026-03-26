@@ -1,135 +1,78 @@
-# Simulation Engine Architecture
+# Simulation Engine
 
 ## Purpose
 
-The Simulation Engine is a **scenario execution layer** that evaluates how the supply chain system behaves under different conditions.
-
-Instead of running the decision pipeline once, it runs it multiple times with controlled input changes.
-
-This enables testing situations such as:
-
-- demand spikes
-- supplier delays
-- promotions
-- inventory disruptions
+Runs the same decision pipeline under different input conditions.
 
 ---
 
 ## One-Line Summary
 
-The Simulation Engine runs the **same decision pipeline under different scenarios to evaluate policy behavior**.
+Executes the coordinator-driven pipeline multiple times with modified inputs.
 
 ---
 
-## Position in System
+## Role in System
 
-The Simulation Engine sits above the existing pipeline.
+The simulation engine sits above the core pipeline.
 
-System flow:
+Flow:
 
-Simulation Engine  
-→ Decision Coordinator  
-→ Tool Runner  
-→ Domain Modules  
+Simulation → Coordinator → Tools → Domain Modules
 
-It does not replace or modify the pipeline.
-
-It **reuses the exact same system logic**.
-
----
-
-## Core Principle
-
-The Simulation Engine does not implement forecasting or replenishment.
-
-It only:
-
-- modifies inputs  
-- runs the pipeline  
-- collects outputs  
-
-This ensures:
-
-- consistency  
-- realism  
-- no duplicated logic  
+It does not replace or change the pipeline.
+It reuses the same logic under different scenarios.
 
 ---
 
 ## Responsibilities
 
-The engine performs four steps:
-
-1. define scenarios  
-2. modify inputs  
-3. execute decision pipeline  
-4. collect results  
+* define scenarios
+* apply input changes
+* run the pipeline
+* collect results
 
 ---
 
-## Scenario Examples
-
-Baseline  
-No changes  
-
-Demand spike  
-Increase demand  
-
-Supplier delay  
-Increase lead time  
-
-Promotion  
-Temporary demand boost  
-
-Inventory shock  
-Reduce available inventory  
-
----
-
-## Scenario Execution Flow
+## Execution Logic
 
 For each scenario:
 
-1. start with base inputs  
+1. start from baseline input
+2. apply scenario modifications
+3. run the coordinator
+4. capture outputs
+5. store scenario result
 
-2. apply modifications  
+Typical modifications include:
 
-   examples:  
-   - demand × multiplier  
-   - lead time increase  
-   - inventory reduction  
-
-3. call Decision Coordinator  
-
-4. capture outputs  
-
-5. store results  
+* demand multiplier
+* lead time multiplier
+* inventory shock
 
 ---
 
-## Output Structure
+## What It Does Not Do
 
-Each scenario produces structured results:
+* does not implement forecasting
+* does not implement inventory logic
+* does not implement replenishment logic
+* does not introduce new business rules
 
-- scenario_name  
-- forecast summary  
-- inventory risk indicators  
-- replenishment decision  
-- service level estimate  
-
-These allow direct comparison across scenarios.
+Its job is execution, not decision-making.
 
 ---
 
-## Comparison Purpose
+## Outputs
 
-Simulation enables questions like:
+Each scenario run returns structured outputs such as:
 
-- which scenario increases stockout risk  
-- which scenario triggers large orders  
-- which scenario breaks policy  
+* scenario name
+* decision output
+* inventory signals
+* replenishment result
 
-This turns the system into a **decision experimentation platform**.
+These outputs are then passed to scenario analysis.
 
 ---
 
@@ -137,59 +80,43 @@ This turns the system into a **decision experimentation platform**.
 
 ```text
 src/simulation_engine/
-- __init__.py
 - schemas.py
-- scenarios.py
 - service.py
 - smoke_test.py
 ```
 
 ---
 
-## File Responsibilities
-
-schemas → scenario inputs and outputs  
-scenarios → input modification rules  
-service → scenario execution engine  
-smoke_test → validation  
-
----
-
 ## Dependency Direction
 
-simulation_engine  
-↓  
-decision_coordinator  
-↓  
-tools  
-↓  
-domain modules  
+simulation_engine
+↓
+decision_coordinator
+↓
+tools
+↓
+domain modules
 
-Lower layers must never depend on simulation.
+Lower layers must not depend on simulation.
 
 ---
 
-## Design Principle
+## Design Rules
 
-The Simulation Engine should be:
-
-- non-intrusive  
-- reusable  
-- consistent with pipeline  
-- easy to extend  
-
-It must not introduce new business logic.
+* reuse the exact same pipeline
+* keep simulation non-intrusive
+* modify inputs only
+* keep core logic unchanged
 
 ---
 
 ## Mental Model
 
-pipeline = single decision  
-
-simulation = multiple decisions under different worlds  
+single run = one decision path
+simulation = many decision paths under different conditions
 
 ---
 
-## Final View
+## One-Line Summary
 
-The Simulation Engine is a **policy testing layer** that evaluates how decisions change when the environment changes.
+A thin execution layer that stress-tests the same deterministic pipeline under different scenarios.

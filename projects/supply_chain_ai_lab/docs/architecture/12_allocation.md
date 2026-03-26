@@ -1,191 +1,79 @@
-# Allocation Module Architecture
+# Allocation Module
 
 ## Purpose
 
-The allocation module determines how **limited inventory is distributed across multiple locations**.
-
-It is used when total supply cannot satisfy total demand.
-
-Examples:
-
-- distributing scarce inventory across stores  
-- allocating stock during disruptions  
-- prioritizing locations under shortage  
-- balancing service levels  
+Distributes limited inventory across multiple locations.
 
 ---
 
 ## One-Line Summary
 
-Converts **limited supply → allocation plan across locations**.
+Converts limited supply into an allocation plan.
 
 ---
 
-## Architectural Role
+## Role in System
 
-Introduces **network-level decision making**.
+Allocation is used when supply is insufficient.
 
-Earlier modules focus on local logic:
-
-- forecasting → demand  
-- inventory → stock state  
-- replenishment → reorder  
-
-Allocation answers:
-
-👉 when supply is limited, who gets how much?
+- it operates at network level  
+- it does not belong to the core pipeline  
+- it is triggered under shortage scenarios  
 
 ---
 
-## System Position
+## Inputs
 
-Allocation is used after inventory visibility, typically under shortage scenarios.
-
-Flow:
-
-Forecast  
-→ Inventory  
-→ Replenishment  
-→ Disruption / Shortage  
-→ Allocation  
-→ Scenario Analysis  
-
-It complements replenishment rather than replacing it.
-
----
-
-## Core Concepts
-
-### Location Demand
-
-Demand requirement per location.
-
-Examples:
-
-- Store A: 80  
-- Store B: 60  
-- Store C: 50  
-
----
-
-### Allocation Request
-
-Defines the allocation problem:
-
-- SKU  
 - total available inventory  
-- list of location demands  
+- demand per location  
 
 ---
 
-### Location Allocation
+## Outputs
 
-Assigned inventory for one location.
-
-Examples:
-
-- Store A: 42  
-- Store B: 32  
-- Store C: 26  
+- allocation per location  
 
 ---
 
-### Allocation Result
+## Core Logic
 
-Complete allocation plan across all locations.
+If supply ≥ demand → full allocation  
 
----
-
-## Current Policy
-
-Proportional allocation.
-
-Logic:
-
-- if supply ≥ demand → full allocation  
-- if supply < demand → allocate proportionally  
-
-This is:
-
-- simple  
-- deterministic  
-- interpretable  
+If supply < demand → proportional allocation  
 
 ---
 
-## Why It Matters
+## Service Interface
 
-Real systems frequently face shortages due to:
-
-- supplier delays  
-- demand spikes  
-- transportation issues  
-- production limits  
-- inventory loss  
-
-Allocation provides a **rational and explainable way to distribute scarce inventory**.
+- build_allocation_request  
+- run_allocation  
 
 ---
 
-## Design Principles
+## What It Does Not Do
 
-Deterministic → same inputs produce same outputs  
-
-Simple baseline → proportional allocation  
-
-Modular → independent service  
-
-Extensible → supports future policies  
+- no forecasting  
+- no inventory computation  
+- no replenishment decisions  
+- no orchestration  
 
 ---
 
-## Project Structure
+## Key Rule
 
-```text
-src/allocation/
-- __init__.py
-- schemas.py
-- policy.py
-- service.py
-- smoke_test.py
-```
-
----
-
-## Relationship to Other Modules
-
-Uses inputs from:
-
-- demand (forecast or scenario)  
-- inventory availability  
-
-Feeds into:
-
-- scenario analysis  
-- service level evaluation  
-- decision reasoning  
-
----
-
-## Future Extensions
-
-- priority-based allocation  
-- minimum service level rules  
-- regional weighting  
-- customer prioritization  
-- warehouse constraints  
-- cost-aware policies  
+Allocation distributes supply.  
+It does not generate or modify supply.
 
 ---
 
 ## Mental Model
 
-demand = who needs inventory  
-supply = what we have  
-allocation = how we distribute it  
+demand = need  
+supply = available  
+allocation = distribution  
 
 ---
 
-## Final View
+## One-Line Summary
 
-The allocation module is the system’s **network decision layer**, distributing limited inventory across locations in a consistent and explainable way.
+A network-level module that distributes limited inventory across locations.

@@ -10,13 +10,18 @@ from sample_data.schemas import (
 
 from sample_data.schemas import SampleNetwork
 
+from pathlib import Path
+
+DATA_DIR = Path(__file__).resolve().parent
+
 
 def load_inventory_snapshot() -> list[InventoryRecord]:
     """
     Load the current inventory snapshot from CSV
     and convert each row into an InventoryRecord.
     """
-    df = pd.read_csv("sample_data/inventory_snapshot.csv")
+  
+    df = pd.read_csv(DATA_DIR /"inventory_snapshot.csv")
     rows = df.to_dict(orient="records")
     return [InventoryRecord(**row) for row in rows]
 
@@ -25,7 +30,8 @@ def load_products() -> list[ProductRecord]:
     """
     Load product data from CSV and convert rows to ProductRecord objects.
     """
-    df = pd.read_csv("sample_data/network_products.csv")
+    df = pd.read_csv(DATA_DIR /"network_products.csv")
+    
     rows = df.to_dict(orient="records")
     return [ProductRecord(**row) for row in rows]
 
@@ -34,7 +40,7 @@ def load_locations() -> list[LocationRecord]:
     """
     Load location data from CSV and convert rows to LocationRecord objects.
     """
-    df = pd.read_csv("sample_data/network_locations.csv")
+    df = pd.read_csv(DATA_DIR /"network_locations.csv")
     rows = df.to_dict(orient="records")
     return [LocationRecord(**row) for row in rows]
 
@@ -43,7 +49,8 @@ def load_suppliers() -> list[SupplierRecord]:
     """
     Load supplier data from CSV and convert rows to SupplierRecord objects.
     """
-    df = pd.read_csv("sample_data/network_suppliers.csv")
+
+    df = pd.read_csv(DATA_DIR /"network_suppliers.csv")
     rows = df.to_dict(orient="records")
     return [SupplierRecord(**row) for row in rows]
 
@@ -53,7 +60,9 @@ def load_transportation_lanes() -> list[TransportationLaneRecord]:
     Load transportation lane data from CSV
     and convert rows to TransportationLaneRecord objects.
     """
-    df = pd.read_csv("sample_data/network_lanes.csv")
+ 
+    df = pd.read_csv(DATA_DIR /"network_lanes.csv")
+    
     rows = df.to_dict(orient="records")
     return [TransportationLaneRecord(**row) for row in rows]
 

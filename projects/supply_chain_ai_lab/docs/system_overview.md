@@ -1,57 +1,64 @@
 # Supply Chain AI Lab — System Overview
 
-## Purpose
+## What this is
 
-Supply Chain AI Lab is a long-term project for building realistic supply chain AI systems that combine:
+A supply chain decision system that takes demand and inventory state, produces replenishment decisions, and evaluates how those decisions behave under different scenarios.
 
-- machine learning
-- simulation
-- decision support
-- LLM reasoning
-- bounded agent workflows
+---
 
-The project is designed for learning, portfolio building, and interview preparation.
+## Core Pipeline
 
-## System Direction
+Forecast → Inventory → Replenishment → Decision Coordinator
 
-The lab will be built as a modular platform with shared infrastructure and multiple supply chain modules.
+- Forecast → estimates demand
+- Inventory → translates stock into risk signals (days of supply, stockout risk)
+- Replenishment → decides whether to reorder and how much
+- Coordinator → runs the flow end-to-end
 
-Initial target modules include:
+---
 
-- demand forecasting
-- inventory and replenishment
-- allocation and transfers
-- disruption intelligence
-- assortment optimization
-- recommendation systems
+## Key Components
 
-## Core Architecture
+### Simulation Engine
+Runs the same pipeline under different conditions (demand spikes, lead time delays, inventory shocks).
 
-The system will be organized around these layers:
+### Scenario Analysis
+Compares baseline vs scenarios using:
+- delta vs baseline
+- days of supply (DOS)
+- stockout risk
+- inventory pressure (understock / overstock)
 
-1. data ingestion and preparation
-2. feature and modeling pipelines
-3. simulation environment
-4. decision and policy layer
-5. LLM reasoning and explanation layer
-6. bounded agent orchestration
-7. evaluation and monitoring
+### Disruption Modeling
+Defines structured disruption events that feed into simulation.
+
+### Allocation
+Distributes limited inventory across locations.
+
+### Monitoring
+Tracks risk signals across the system.
+
+### LLM Explanation Layer (V3)
+Explains outcomes using structured outputs.  
+Does not make decisions.
+
+### Decision Intelligence (V4)
+Adds interpretation of risk and trade-offs (for example, understock vs overstock).
+
+---
 
 ## Design Principles
 
-The lab should follow these principles:
+- deterministic logic first
+- clear module boundaries
+- simulation for validation
+- simple, interpretable signals
+- LLM used only for explanation
 
-- solve real supply chain problems
-- prefer modular and reusable components
-- keep deterministic logic in control
-- use LLMs as bounded reasoning layers
-- support scenario simulation and what-if analysis
-- document architecture for interview use
+---
 
-## First Module
+## Why this matters
 
-The first module will be:
-
-**Demand Forecasting + Inventory Simulation**
-
-This module will serve as the backbone for later modules such as replenishment, allocation, and disruption intelligence.
+- produces decisions, not just predictions
+- shows how decisions behave under stress
+- keeps logic transparent and explainable
