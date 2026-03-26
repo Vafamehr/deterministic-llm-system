@@ -63,7 +63,6 @@ def print_core_result(core_result) -> None:
     )
     print(f"Days of Supply: {core_result.inventory_result.days_of_supply:.2f}")
     print(f"Stockout Risk: {core_result.inventory_result.stockout_risk}")
-    print(f"Inventory Pressure: {core_result.inventory_result.inventory_pressure}")
     print(f"Reorder: {core_result.replenishment_result.reorder}")
     print(
         f"Recommended Units: "
@@ -112,8 +111,9 @@ def print_simulation_result(simulation_result) -> None:
             f"units={row.recommended_units:<10.2f} "
             f"delta={row.delta_vs_baseline:<10.2f} "
             f"dos={row.days_of_supply:<8.2f} "
-            f"risk={row.stockout_risk:<6} "
-            f"pressure={row.inventory_pressure:<6}"
+            f"risk={str(row.stockout_risk):<6} "
+            f"pressure={row.inventory_pressure:<6} "
+            f"overstock={row.overstock_risk:<6}"
         )
 
 

@@ -24,6 +24,7 @@ def build_explanation_context(
             days_of_supply=row.days_of_supply,
             stockout_risk=row.stockout_risk,
             inventory_pressure=row.inventory_pressure,
+            overstock_risk=row.overstock_risk,
         )
         for row in analysis_result.comparison_rows
     ]
@@ -35,6 +36,7 @@ def build_explanation_context(
         baseline_days_of_supply=baseline_row.days_of_supply,
         baseline_stockout_risk=baseline_row.stockout_risk,
         baseline_inventory_pressure=baseline_row.inventory_pressure,
+        baseline_overstock_risk=baseline_row.overstock_risk,
         scenario_rows=scenario_rows,
         system_note="Deterministic outputs are the source of truth. LLM output is explanation only.",
     )

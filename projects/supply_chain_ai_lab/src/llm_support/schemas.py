@@ -20,6 +20,7 @@ class ScenarioExplanationRow:
     days_of_supply: float
     stockout_risk: str
     inventory_pressure: str
+    overstock_risk: str
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class ExplanationContext:
     baseline_days_of_supply: float
     baseline_stockout_risk: str
     baseline_inventory_pressure: str
+    baseline_overstock_risk: str
     scenario_rows: List[ScenarioExplanationRow] = field(default_factory=list)
     system_note: Optional[str] = None
 

@@ -11,9 +11,16 @@ class ScenarioAnalysisService:
     """
 
     def _compute_inventory_pressure(self, days_of_supply: float) -> str:
-        if days_of_supply < 7:
+        if days_of_supply < 5:
             return "HIGH"
-        if days_of_supply <= 14:
+        if days_of_supply < 10:
+            return "MEDIUM"
+        return "LOW"
+
+    def _compute_overstock_risk(self, days_of_supply: float) -> str:
+        if days_of_supply > 30:
+            return "HIGH"
+        if days_of_supply >= 20:
             return "MEDIUM"
         return "LOW"
 
@@ -35,6 +42,9 @@ class ScenarioAnalysisService:
         baseline_inventory_pressure = self._compute_inventory_pressure(
             baseline_days_of_supply
         )
+        baseline_overstock_risk = self._compute_overstock_risk(
+            baseline_days_of_supply
+        )
 
         comparison_rows = [
             ScenarioComparisonRow(
@@ -45,6 +55,7 @@ class ScenarioAnalysisService:
                 days_of_supply=baseline_days_of_supply,
                 stockout_risk=baseline_stockout_risk,
                 inventory_pressure=baseline_inventory_pressure,
+                overstock_risk=baseline_overstock_risk,
             )
         ]
 
@@ -64,6 +75,9 @@ class ScenarioAnalysisService:
             scenario_inventory_pressure = self._compute_inventory_pressure(
                 scenario_days_of_supply
             )
+            scenario_overstock_risk = self._compute_overstock_risk(
+                scenario_days_of_supply
+            )
 
             comparison_rows.append(
                 ScenarioComparisonRow(
@@ -74,6 +88,7 @@ class ScenarioAnalysisService:
                     days_of_supply=scenario_days_of_supply,
                     stockout_risk=scenario_stockout_risk,
                     inventory_pressure=scenario_inventory_pressure,
+                    overstock_risk=scenario_overstock_risk,
                 )
             )
 

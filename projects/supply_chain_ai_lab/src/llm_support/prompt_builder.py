@@ -13,6 +13,7 @@ def build_explanation_prompt(request: ExplanationRequest) -> str:
         f"- days_of_supply: {context.baseline_days_of_supply:.2f}\n"
         f"- stockout_risk: {context.baseline_stockout_risk}\n"
         f"- inventory_pressure: {context.baseline_inventory_pressure}\n"
+        f"- overstock_risk: {context.baseline_overstock_risk}\n"
     )
 
     scenario_lines = []
@@ -25,7 +26,8 @@ def build_explanation_prompt(request: ExplanationRequest) -> str:
                 f"delta_vs_baseline={row.delta_vs_baseline:.2f}, "
                 f"days_of_supply={row.days_of_supply:.2f}, "
                 f"stockout_risk={row.stockout_risk}, "
-                f"inventory_pressure={row.inventory_pressure}"
+                f"inventory_pressure={row.inventory_pressure}, "
+                f"overstock_risk={row.overstock_risk}"
             )
         )
 

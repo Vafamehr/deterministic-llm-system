@@ -14,6 +14,7 @@ class ScenarioComparisonRow:
     days_of_supply: float
     stockout_risk: str
     inventory_pressure: str
+    overstock_risk: str
 
 
 @dataclass(frozen=True)
