@@ -122,6 +122,35 @@ def run_supply_chain_system(
 
         simulation_result = run_simulation(system_input.simulation_input)
 
+        # --- V4 PRINT (LIGHT, NO REFACTOR) ---
+        if simulation_result.analysis_result is not None:
+            print("\n=== SCENARIO ANALYSIS + V4 ===")
+
+            for row in simulation_result.analysis_result.comparison_rows:
+                state = (
+                    row.decision_intelligence.inventory_state
+                    if row.decision_intelligence
+                    else None
+                )
+                risk = (
+                    row.decision_intelligence.key_risk
+                    if row.decision_intelligence
+                    else None
+                )
+
+                print(
+                    f"{row.scenario_name:<15}"
+                    f" reorder={row.reorder:<5}"
+                    f" units={row.recommended_units:<10.2f}"
+                    f" delta={row.delta_vs_baseline:<10.2f}"
+                    f" dos={row.days_of_supply:<8.2f}"
+                    f" risk={row.stockout_risk:<6}"
+                    f" pressure={row.inventory_pressure:<6}"
+                    f" overstock={row.overstock_risk:<6}"
+                    f" state={state}"
+                    f" key_risk={risk}"
+                )
+
         llm_explanation = None
         if system_input.explanation_task is not None:
             llm_service = LLMExplanationService()
@@ -129,6 +158,7 @@ def run_supply_chain_system(
                 simulation_result=simulation_result,
                 task=system_input.explanation_task,
             )
+
         return SystemRunnerResult(
             core_result=None,
             disruption_result=None,

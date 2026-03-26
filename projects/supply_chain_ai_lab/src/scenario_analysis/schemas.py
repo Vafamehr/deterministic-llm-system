@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
+
+from decision_intelligence.schemas import DecisionIntelligenceOutput
 
 
 @dataclass(frozen=True)
@@ -15,6 +17,7 @@ class ScenarioComparisonRow:
     stockout_risk: str
     inventory_pressure: str
     overstock_risk: str
+    decision_intelligence: Optional[DecisionIntelligenceOutput] = None
 
 
 @dataclass(frozen=True)

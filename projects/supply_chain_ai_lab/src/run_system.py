@@ -98,13 +98,24 @@ def print_allocation_result(allocation_result) -> None:
 
 
 def print_simulation_result(simulation_result) -> None:
-    print("\n=== SCENARIO ANALYSIS ===")
+    print("\n=== SCENARIO ANALYSIS + V4 ===")
 
     if simulation_result.analysis_result is None:
         print("No scenario analysis result produced.")
         return
 
     for row in simulation_result.analysis_result.comparison_rows:
+        state = (
+            row.decision_intelligence.inventory_state
+            if row.decision_intelligence
+            else None
+        )
+        key_risk = (
+            row.decision_intelligence.key_risk
+            if row.decision_intelligence
+            else None
+        )
+
         print(
             f"{row.scenario_name:<15} "
             f"reorder={str(row.reorder):<6} "
@@ -113,7 +124,9 @@ def print_simulation_result(simulation_result) -> None:
             f"dos={row.days_of_supply:<8.2f} "
             f"risk={str(row.stockout_risk):<6} "
             f"pressure={row.inventory_pressure:<6} "
-            f"overstock={row.overstock_risk:<6}"
+            f"overstock={row.overstock_risk:<6} "
+            f"state={state} "
+            f"key_risk={key_risk}"
         )
 
 

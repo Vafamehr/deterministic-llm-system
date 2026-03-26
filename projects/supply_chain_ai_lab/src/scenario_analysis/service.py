@@ -1,3 +1,4 @@
+from decision_intelligence.service import classify_decision_intelligence
 from simulation_engine.schemas import SimulationResult
 from scenario_analysis.schemas import (
     ScenarioAnalysisResult,
@@ -45,6 +46,12 @@ class ScenarioAnalysisService:
         baseline_overstock_risk = self._compute_overstock_risk(
             baseline_days_of_supply
         )
+        baseline_decision_intelligence = classify_decision_intelligence(
+            days_of_supply=baseline_days_of_supply,
+            stockout_risk=baseline_stockout_risk,
+            inventory_pressure=baseline_inventory_pressure,
+            overstock_risk=baseline_overstock_risk,
+        )
 
         comparison_rows = [
             ScenarioComparisonRow(
@@ -56,6 +63,7 @@ class ScenarioAnalysisService:
                 stockout_risk=baseline_stockout_risk,
                 inventory_pressure=baseline_inventory_pressure,
                 overstock_risk=baseline_overstock_risk,
+                decision_intelligence=baseline_decision_intelligence,
             )
         ]
 
@@ -78,6 +86,12 @@ class ScenarioAnalysisService:
             scenario_overstock_risk = self._compute_overstock_risk(
                 scenario_days_of_supply
             )
+            scenario_decision_intelligence = classify_decision_intelligence(
+                days_of_supply=scenario_days_of_supply,
+                stockout_risk=scenario_stockout_risk,
+                inventory_pressure=scenario_inventory_pressure,
+                overstock_risk=scenario_overstock_risk,
+            )
 
             comparison_rows.append(
                 ScenarioComparisonRow(
@@ -89,6 +103,7 @@ class ScenarioAnalysisService:
                     stockout_risk=scenario_stockout_risk,
                     inventory_pressure=scenario_inventory_pressure,
                     overstock_risk=scenario_overstock_risk,
+                    decision_intelligence=scenario_decision_intelligence,
                 )
             )
 
